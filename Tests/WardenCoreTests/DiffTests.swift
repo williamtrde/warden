@@ -84,9 +84,20 @@ final class StructuralDiffTests: XCTestCase {
         XCTAssertEqual(changes.map(\.dottedPath), ["h.1.c"])
     }
 
-    func testTypeChangeIsAModification() throws {
-        let changes = StructuralDiff.compute(old: try json(#"{"a":1}"#), new: try json(#"{"a":{"b":1}}"#))
+    func testScalarChangeOfTypeIsAModification() throws {
+        let changes = StructuralDiff.compute(old: try json(#"{"a":1}"#), new: try json(#"{"a":"1"}"#))
         XCTAssertEqual(changes.map(\.kind), [.modified])
+    }
+
+    func testTypeChangeExpandsToLeaves() throws {
+        let changes = StructuralDiff.compute(old: try json(#"{"mcpServers":null}"#), new: try json(#"{"mcpServers":{"e":{"command":"sh"}}}"#))
+        XCTAssertTrue(changes.contains { $0.kind == .added && $0.path == ["mcpServers", "e", "command"] })
+    }
+
+    func testLookalikeStringIsAChange() throws {
+        let changes = StructuralDiff.compute(old: .string("/opt/Kit/run"), new: .string("/opt/\u{212A}it/run"))
+        XCTAssertEqual(changes.count, 1)
+        XCTAssertFalse(LineDiff.compute(old: "caf\u{E9}", new: "cafe\u{301}").isEmpty)
     }
 
     func testMissingDocumentMeansEverythingIsNew() throws {

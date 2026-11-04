@@ -30,9 +30,9 @@ public enum RiskClassifier {
         return findings
     }
 
-    /// Removes the `projects.<path>.` prefix used by `~/.claude.json` and Codex's `config.toml`.
+    /// Removes the `projects.<path>.` or `profiles.<name>.` prefix, so that one rule covers every scope.
     static func scopedPath(_ path: [String]) -> [String] {
-        path.count > 2 && path[0] == "projects" ? Array(path.dropFirst(2)) : path
+        path.count > 2 && ["projects", "profiles"].contains(path[0]) ? Array(path.dropFirst(2)) : path
     }
 
     static func projectPath(_ path: [String]) -> String? {

@@ -34,13 +34,14 @@ public struct ConfigRule: Sendable {
 /// Critical rules for JSON and TOML configuration. Everything that matches none of them is INFO.
 public enum ConfigRules {
     public static let all: [ConfigRule] = [
-        hooks, mcpServerAdded, mcpServerChanged, sensitiveEnvironment, credentialHelper,
+        hooks, mcpServerAdded, mcpServerChanged, sensitiveEnvironment, credentialHelper, commandSetting,
         allProjectMcpServers, projectMcpServerApproved, permissionWidened, projectTrust, pluginAdded
     ]
 
     /// Runs on `hooks.*`, including Codex `hooks.state` trust hashes, and on Codex `notify`.
     static let hooks = ConfigRule(id: .hookChanged) { input in
-        !input.isRemoval && (input.head == "hooks" || input.head == "notify")
+        if input.head == "disableAllHooks" { return input.newBool == true }
+        return !input.isRemoval && (input.head == "hooks" || input.head == "notify")
     }
 
     static let mcpServerAdded = ConfigRule(id: .mcpServerAdded) { input in
@@ -48,23 +49,23 @@ public enum ConfigRules {
         return input.oldDocument?.value(at: input.scopePrefix + server) == nil
     }
 
+    /// Any change to an existing server counts, unless the field is known to be harmless:
+    /// a denylist of dangerous fields would silently miss each new way to configure a server.
     static let mcpServerChanged = ConfigRule(id: .mcpServerChanged) { input in
         guard let server = mcpServerPath(input), input.scopedPath.count > server.count else { return false }
         guard input.oldDocument?.value(at: input.scopePrefix + server) != nil,
               input.newDocument?.value(at: input.scopePrefix + server) != nil else { return false }
-        return mcpConnectionKeys.contains(input.scopedPath[server.count])
+        return !harmlessMcpKeys.contains(input.scopedPath[server.count])
     }
 
-    /// The fields that decide where a server connects, what it runs and what it receives.
-    private static let mcpConnectionKeys: Set<String> = [
-        "url", "command", "args", "env", "headers", "http_headers", "env_http_headers",
-        "bearer_token_env_var", "type", "transport", "cwd"
+    private static let harmlessMcpKeys: Set<String> = [
+        "timeout", "startup_timeout_sec", "startup_timeout_ms", "tool_timeout_sec", "description", "name"
     ]
 
     /// Returns the scoped path of the server a change belongs to.
     private static func mcpServerPath(_ input: ConfigRuleInput) -> [String]? {
         let path = input.scopedPath
-        if ["mcpServers", "mcp_servers"].contains(input.head), path.count >= 2 {
+        if ["mcpServers", "mcp_servers", "mcp.servers"].contains(input.head), path.count >= 2 {
             return Array(path.prefix(2))
         }
         if input.head == "mcp", path.count >= 3, path[1] == "servers" {
@@ -78,32 +79,46 @@ public enum ConfigRules {
         if let name = environmentVariableName(path) {
             return isSensitiveVariable(name)
         }
-        if ["openai_base_url", "chatgpt_base_url", "http.proxy"].contains(input.head) { return !input.isRemoval }
+        if ["openai_base_url", "chatgpt_base_url", "http.proxy", "model_provider"].contains(input.head) { return !input.isRemoval }
         if input.head == "http.proxyStrictSSL" { return input.newBool == false }
+        if input.head == "shell_environment_policy", path.last == "inherit" { return input.newString == "all" }
+        if input.head == "otel" { return path.last == "endpoint" }
         return input.head == "model_providers" && path.last == "base_url"
     }
 
     private static func environmentVariableName(_ path: [String]) -> String? {
-        if path.count == 2, path[0] == "env" || path[0].hasPrefix("terminal.integrated.env.") { return path[1] }
-        if path.count == 3, path[0] == "shell_environment_policy", path[1] == "set" { return path[2] }
+        guard let head = path.first else { return nil }
+        let isEnvironment = head == "env" || head.hasPrefix("terminal.integrated.env.") || head == "claudeCode.environmentVariables"
+        if path.count >= 2, isEnvironment { return path[1] }
+        if path.count == 3, head == "shell_environment_policy", path[1] == "set" { return path[2] }
         return nil
     }
 
     private static let sensitiveVariables: Set<String> = [
-        "ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_CUSTOM_HEADERS",
-        "OPENAI_BASE_URL", "OPENAI_API_BASE", "OPENAI_API_KEY", "CLAUDE_CODE_API_KEY_HELPER_TTL_MS",
-        "OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_HEADERS",
-        "NODE_EXTRA_CA_CERTS", "NODE_TLS_REJECT_UNAUTHORIZED", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"
+        "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_CUSTOM_HEADERS", "OPENAI_API_BASE", "OPENAI_API_KEY",
+        "CLAUDE_CODE_API_KEY_HELPER_TTL_MS", "CLAUDE_CODE_SHELL_PREFIX", "OTEL_EXPORTER_OTLP_HEADERS",
+        "NODE_EXTRA_CA_CERTS", "NODE_TLS_REJECT_UNAUTHORIZED", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE",
+        "BASH_ENV", "ENV", "ZDOTDIR", "PATH", "PYTHONPATH", "PYTHONSTARTUP"
     ]
 
     private static func isSensitiveVariable(_ name: String) -> Bool {
         let upper = name.uppercased()
-        return sensitiveVariables.contains(upper) || upper.hasSuffix("_PROXY") || upper.hasSuffix("_BASE_URL")
+        if sensitiveVariables.contains(upper) { return true }
+        let suffixes = ["_PROXY", "_BASE_URL", "_ENDPOINT", "_OPTIONS"]
+        return suffixes.contains(where: upper.hasSuffix) || upper.hasPrefix("DYLD_") || upper.hasPrefix("LD_")
     }
 
     static let credentialHelper = ConfigRule(id: .credentialHelper) { input in
         let helpers: Set<String> = ["apiKeyHelper", "otelHeadersHelper", "awsAuthRefresh", "awsCredentialExport", "gcpAuthRefresh"]
         return !input.isRemoval && helpers.contains(input.head)
+    }
+
+    /// Settings that name a program or a file the agent will execute or obey.
+    static let commandSetting = ConfigRule(id: .commandSetting) { input in
+        guard !input.isRemoval else { return false }
+        let commands: Set<String> = ["statusLine", "fileSuggestion"]
+        if commands.contains(input.head) { return input.scopedPath.last == "command" }
+        return ["experimental_instructions_file", "claudeCode.claudeProcessWrapper"].contains(input.head)
     }
 
     static let allProjectMcpServers = ConfigRule(id: .allProjectMcpServersEnabled) { input in
@@ -129,10 +144,15 @@ public enum ConfigRules {
             return input.newBool == true
         case "approval_policy":
             return input.newString == "never"
+        case "profile", "claudeCode.initialPermissionMode":
+            return !input.isRemoval // A profile can carry its own approval and sandbox policy.
         case "sandbox_mode":
-            return input.newString == "danger-full-access"
+            return !input.isRemoval && input.newString != "read-only"
         case "sandbox_workspace_write":
-            return path.last == "network_access" && input.newBool == true
+            if path.last == "network_access" { return input.newBool == true }
+            return path.contains("writable_roots") && input.change.kind == .added
+        case "sandbox":
+            return path.last == "enabled" && input.newBool == false
         case "security.workspace.trust.enabled":
             return input.newBool == false
         default:
@@ -144,7 +164,7 @@ public enum ConfigRules {
         guard path.count >= 2 else { return false }
         switch path[1] {
         case "defaultMode":
-            return ["bypassPermissions", "dontAsk"].contains(input.newString ?? "")
+            return ["bypassPermissions", "dontAsk", "acceptEdits"].contains(input.newString ?? "")
         case "allow":
             return input.change.kind == .added && isPowerfulToolRule(input.text)
         case "deny", "ask":
@@ -158,16 +178,18 @@ public enum ConfigRules {
         }
     }
 
-    /// `Bash(...)`, network tools, or an unrestricted wildcard.
+    /// `Bash(...)`, network tools, every MCP tool, an unrestricted wildcard, or anything on sensitive paths.
     private static func isPowerfulToolRule(_ rule: String) -> Bool {
         let tool = rule.prefix { $0 != "(" }.trimmingCharacters(in: .whitespaces)
-        return ["Bash", "WebFetch", "WebSearch", "*"].contains(tool)
+        if ["Bash", "WebFetch", "WebSearch", "*", "mcp__*"].contains(tool) { return true }
+        let sensitivePaths = [".claude", ".codex", ".cursor", ".ssh", ".aws", ".env", ".gnupg", ".netrc", ".npmrc"]
+        return rule.contains("(") && sensitivePaths.contains(where: rule.contains)
     }
 
     private static func isEditorAutoRun(_ input: ConfigRuleInput) -> Bool {
         guard input.newBool == true else { return false }
         let key = input.scopedPath.joined(separator: ".").lowercased()
-        return ["autoapprove", "autorun", "yolo"].contains { key.contains($0) }
+        return ["autoapprove", "autorun", "yolo", "dangerouslyskip"].contains { key.contains($0) }
     }
 
     static let projectTrust = ConfigRule(id: .projectTrustGranted) { input in

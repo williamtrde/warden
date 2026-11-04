@@ -34,6 +34,26 @@ public enum WatchPolicy: Equatable, Sendable {
         }
     }
 
+    /// VS Code treats `{"http":{"proxy":x}}` and `{"http.proxy":x}` alike, so the nested spelling
+    /// must not escape dotted patterns. Folds nested keys until a watched key is reached.
+    public func foldingNestedKeys(of value: ConfigValue) -> ConfigValue {
+        guard case .object(let members) = value else { return value }
+        var folded: [String: ConfigValue] = [:]
+        fold(members, prefix: "", into: &folded)
+        return .object(folded)
+    }
+
+    private func fold(_ members: [String: ConfigValue], prefix: String, into result: inout [String: ConfigValue]) {
+        for (key, value) in members {
+            let fullKey = prefix + key
+            if case .object(let children) = value, !children.isEmpty, !watches([fullKey]) {
+                fold(children, prefix: fullKey + ".", into: &result)
+            } else {
+                result[fullKey] = value
+            }
+        }
+    }
+
     /// The part of a document this policy watches. Used to show a diff free of noise.
     public func projection(of value: ConfigValue) -> ConfigValue {
         guard isFiltered else { return value }

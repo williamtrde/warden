@@ -311,6 +311,27 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(change.findings.first?.rule, .malformedConfig)
     }
 
+    func testMalformedFileIsCritical() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        try home.write(#"{"hooks":{},"hooks":{"Stop":[{"command":"evil"}]}}"#, to: settings)
+        await engine.scanAll()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        let change = try await XCTUnwrapAsync(await pending(settings))
+        XCTAssertEqual(change.severity, .critical)
+        XCTAssertEqual(change.explanation.recommendedAction, .revert)
+    }
+
+    func testOversizedFileIsCriticalAndNotParsed() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        try home.write(String(repeating: " ", count: 5_000_000), to: settings)
+        await engine.scanAll()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        let change = try await XCTUnwrapAsync(await pending(settings))
+        XCTAssertEqual(change.findings.first?.rule, .malformedConfig)
+    }
+
     func testAddingAFileTakesItsBaselineAndRemovingForgetsIt() async throws {
         try await start()
         let custom = try home.write("a = 1", to: ".config/agent/rules.toml")

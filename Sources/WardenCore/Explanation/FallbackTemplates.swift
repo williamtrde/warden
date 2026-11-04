@@ -43,6 +43,8 @@ enum FallbackTemplates {
             return .init(what: "A sensitive network setting ({detail}) changed in {file}.", impact: "Traffic from {agent} could go through another server, which could read your prompts and keys {scope}.", label: "a sensitive network setting")
         case .credentialHelper:
             return .init(what: "The helper program that provides credentials ({detail}) changed in {file}.", impact: "{agent} will run this program to get your keys, so it can read or replace them {scope}.", label: "a credential helper")
+        case .commandSetting:
+            return .init(what: "A setting that launches a program ({detail}) changed in {file}.", impact: "{agent} will run this program by itself {scope}.", label: "a program launched by a setting")
         case .allProjectMcpServersEnabled:
             return .init(what: "Automatic approval of project MCP servers was turned on in {file}.", impact: "{agent} will connect to any MCP server a repository declares, without asking you, {scope}.", label: "automatic MCP approval")
         case .projectMcpServerApproved:
@@ -72,7 +74,7 @@ enum FallbackTemplates {
         case .fileDeleted:
             return .init(what: "The file {file} was deleted.", impact: "{agent} loses the settings it contained {scope}.", label: "a deleted file")
         case .malformedConfig:
-            return .init(what: "The file {file} can no longer be read: its format is broken.", impact: "{agent} may ignore it or fail to start {scope}.", label: "a broken file")
+            return .init(what: "Warden can no longer read {file}: its format is broken or unusual.", impact: "{agent} may still read it, so it could hide a change Warden cannot see {scope}.", label: "an unreadable file")
         case .otherChange:
             return .init(what: "A setting changed in {file} ({detail}).", impact: "This changes how {agent} behaves {scope}, but it does not match a known risk.", label: "another setting")
         }
@@ -90,6 +92,8 @@ enum FallbackTemplates {
             return .init(what: "Un réglage réseau sensible ({detail}) a changé dans {file}.", impact: "Le trafic de {agent} pourrait passer par un autre serveur, capable de lire tes messages et tes clés, {scope}.", label: "un réglage réseau sensible")
         case .credentialHelper:
             return .init(what: "Le programme qui fournit tes identifiants ({detail}) a changé dans {file}.", impact: "{agent} lancera ce programme pour obtenir tes clés, il pourra donc les lire ou les remplacer {scope}.", label: "un programme d'identifiants")
+        case .commandSetting:
+            return .init(what: "Un réglage qui lance un programme ({detail}) a changé dans {file}.", impact: "{agent} lancera ce programme tout seul {scope}.", label: "un programme lancé par un réglage")
         case .allProjectMcpServersEnabled:
             return .init(what: "L'approbation automatique des serveurs MCP de projet a été activée dans {file}.", impact: "{agent} se connectera à tout serveur MCP déclaré par un dépôt, sans te demander, {scope}.", label: "l'approbation automatique MCP")
         case .projectMcpServerApproved:
@@ -119,7 +123,7 @@ enum FallbackTemplates {
         case .fileDeleted:
             return .init(what: "Le fichier {file} a été supprimé.", impact: "{agent} perd les réglages qu'il contenait {scope}.", label: "un fichier supprimé")
         case .malformedConfig:
-            return .init(what: "Le fichier {file} n'est plus lisible : son format est cassé.", impact: "{agent} pourrait l'ignorer ou ne plus démarrer {scope}.", label: "un fichier cassé")
+            return .init(what: "Warden ne peut plus lire {file} : son format est cassé ou inhabituel.", impact: "{agent} peut quand même le lire, il pourrait donc cacher un changement que Warden ne voit pas {scope}.", label: "un fichier illisible")
         case .otherChange:
             return .init(what: "Un réglage a changé dans {file} ({detail}).", impact: "Cela modifie le comportement de {agent} {scope}, mais ne correspond à aucun risque connu.", label: "un autre réglage")
         }

@@ -14,9 +14,20 @@ public struct ChangeAnalysis: Equatable, Sendable {
 
 /// Pure comparison of two versions of a file: parsing, policy, classification and diff.
 public enum ChangeAnalyzer {
+    /// Agent configs are kilobytes. Anything far beyond that is refused rather than parsed.
+    static let maxFileSize = 4_000_000
+
     /// Returns nil when nothing relevant changed.
     public static func analyze(target: WatchTarget, old: Data?, new: Data?) -> ChangeAnalysis? {
         guard old != new else { return nil }
+        if let new, new.count > maxFileSize {
+            return ChangeAnalysis(
+                findings: [RiskFinding(rule: .malformedConfig, evidence: "")],
+                diff: LineDiff(hunks: []),
+                fingerprint: WardenStore.hash(new),
+                isMalformed: true
+            )
+        }
         switch target.format {
         case .json, .jsonc, .toml:
             return analyzeStructured(target: target, old: old, new: new)
@@ -44,10 +55,10 @@ public enum ChangeAnalyzer {
     // MARK: - Structured files
 
     private static func analyzeStructured(target: WatchTarget, old: Data?, new: Data?) -> ChangeAnalysis? {
-        let oldValue = old.flatMap { try? ConfigParser.parse($0, format: target.format) }
+        let oldValue = old.flatMap { parse($0, target: target) }
         var newValue: ConfigValue?
         if let new {
-            guard let parsed = try? ConfigParser.parse(new, format: target.format) else {
+            guard let parsed = parse(new, target: target) else {
                 return malformed(target: target, oldValue: oldValue, old: old, new: new)
             }
             newValue = parsed
@@ -66,6 +77,11 @@ public enum ChangeAnalyzer {
             oldText: displayText(target: target, value: oldValue, raw: old),
             newText: displayText(target: target, value: newValue, raw: new)
         )
+    }
+
+    private static func parse(_ data: Data, target: WatchTarget) -> ConfigValue? {
+        guard let value = try? ConfigParser.parse(data, format: target.format) else { return nil }
+        return target.format == .jsonc ? target.policy.foldingNestedKeys(of: value) : value
     }
 
     /// Filtered files show only their watched keys: the rest would drown the signal.

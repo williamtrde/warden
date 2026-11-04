@@ -50,6 +50,8 @@ enum ExplanationRequestBuilder {
             return segment(scoped.first == "hooks" && scoped.count > 2 && scoped[1] == "state" ? 2 : 1)
         case .mcpServerAdded, .mcpServerChanged:
             return scoped.first == "mcp" ? segment(2) : segment(1)
+        case .commandSetting:
+            return segment(0)
         case .pluginAdded:
             return segment(1)
         case .sensitiveEnvironment:

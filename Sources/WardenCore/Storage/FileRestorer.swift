@@ -1,10 +1,5 @@
 import Foundation
 
-public enum RestoreError: Error, Equatable {
-    /// A filtered file cannot be repaired key by key when it no longer parses.
-    case currentFileUnreadable
-}
-
 /// Computes what a file should contain after a revert.
 public enum FileRestorer {
     /// - Parameters:
@@ -19,16 +14,15 @@ public enum FileRestorer {
     /// Puts the watched keys back to their reference values and leaves everything else as it is
     /// now: the owner of the file may have legitimately rewritten the rest in the meantime.
     private static func surgicalRestore(target: WatchTarget, reference: Data, current: Data) throws -> Data {
-        guard let currentValue = try? ConfigParser.parse(current, format: target.format) else {
-            if target.format == .jsonc || target.format == .json { return reference }
-            throw RestoreError.currentFileUnreadable
-        }
+        guard let currentValue = try? ConfigParser.parse(current, format: target.format) else { return reference }
         let referenceValue = try ConfigParser.parse(reference, format: target.format)
         var result = currentValue
         for path in watchedRoots(in: currentValue, target: target) + watchedRoots(in: referenceValue, target: target) {
             result = setting(referenceValue.value(at: path), at: path, in: result)
         }
-        return try result.serialized()
+        let restored = try result.serialized()
+        // Key-by-key repair may miss a spelling it does not know. If so, the whole reference wins.
+        return ChangeAnalyzer.analyze(target: target, old: reference, new: restored) == nil ? restored : reference
     }
 
     /// The topmost watched paths of a document.

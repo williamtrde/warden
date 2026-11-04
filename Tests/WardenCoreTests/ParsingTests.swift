@@ -32,6 +32,60 @@ final class ParsingTests: XCTestCase {
         XCTAssertEqual(value.value(at: ["list"]), .array([.int(1), .int(2)]))
     }
 
+    func testDuplicateKeysAreRefused() {
+        let text = #"{"hooks":{},"hooks":{"Stop":[{"command":"evil"}]}}"#
+        XCTAssertThrowsError(try ConfigParser.parse(Data(text.utf8), format: .json)) {
+            XCTAssertEqual($0 as? ConfigParseError, .duplicateKey("hooks"))
+        }
+    }
+
+    func testJSONCCommentEndsAtCarriageReturn() throws {
+        let value = try ConfigParser.parse(Data("{ // note\r\"http.proxy\":\"http://evil\"\n}".utf8), format: .jsonc)
+        XCTAssertEqual(value.value(at: ["http.proxy"]), .string("http://evil"))
+    }
+
+    func testJSONCToleratesMissingCommaLikeCursor() throws {
+        let value = try ConfigParser.parse(Data(#"{"a":1 "http.proxy":"x"}"#.utf8), format: .jsonc)
+        XCTAssertEqual(value.value(at: ["http.proxy"]), .string("x"))
+        XCTAssertThrowsError(try ConfigParser.parse(Data(#"{"a":1 "b":2}"#.utf8), format: .json))
+        XCTAssertThrowsError(try ConfigParser.parse(Data(#"{"a":1,}"#.utf8), format: .json))
+    }
+
+    func testJSONReadsWhatNodeReads() throws {
+        XCTAssertEqual(try ConfigParser.parse(Data(#"{"x":1e999}"#.utf8), format: .json).value(at: ["x"]), .double(.infinity))
+        XCTAssertEqual(try ConfigParser.parse(Data(#"{"x":"\ud800"}"#.utf8), format: .json).value(at: ["x"]), .string("\u{FFFD}"))
+        XCTAssertEqual(try ConfigParser.parse(Data(#"{"x":"\ud83d\ude00"}"#.utf8), format: .json).value(at: ["x"]), .string("😀"))
+        XCTAssertEqual(try ConfigParser.parse(Data("\u{FEFF}{\"x\":1}".utf8), format: .json).value(at: ["x"]), .int(1))
+    }
+
+    func testDeepNestingIsRefusedNotACrash() {
+        let json = String(repeating: "[", count: 60_000)
+        XCTAssertThrowsError(try ConfigParser.parse(Data(json.utf8), format: .json))
+        let toml = "x = " + String(repeating: "[", count: 60_000)
+        XCTAssertThrowsError(try ConfigParser.parse(Data(toml.utf8), format: .toml))
+        let dotted = (0..<60_000).map { _ in "a" }.joined(separator: ".") + " = 1"
+        XCTAssertThrowsError(try ConfigParser.parse(Data(dotted.utf8), format: .toml))
+    }
+
+    func testNonFiniteNumbersDoNotCrashSerialization() throws {
+        let value = try ConfigParser.parse(Data("x = [nan]\ny = inf\n".utf8), format: .toml)
+        XCTAssertNoThrow(try value.serialized())
+        XCTAssertEqual(value, value)
+    }
+
+    func testTOMLMultilineCornerCases() throws {
+        let source = #"""
+        a = """x"""""
+        b = '''y'''''
+        c = """p \%%
+          q"""
+        """#.replacingOccurrences(of: "\\'", with: "'").replacingOccurrences(of: "%%", with: "   ")
+        let value = try ConfigParser.parse(Data(source.utf8), format: .toml)
+        XCTAssertEqual(value.value(at: ["a"]), .string("x\"\""))
+        XCTAssertEqual(value.value(at: ["b"]), .string("y''"))
+        XCTAssertEqual(value.value(at: ["c"]), .string("p q"))
+    }
+
     func testTOMLReadsThePostmanConfig() throws {
         let source = """
         model = "gpt-5" # trailing comment

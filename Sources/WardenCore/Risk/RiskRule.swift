@@ -10,6 +10,7 @@ public enum RuleID: String, Codable, CaseIterable, Sendable {
     case mcpServerChanged
     case sensitiveEnvironment
     case credentialHelper
+    case commandSetting
     case allProjectMcpServersEnabled
     case projectMcpServerApproved
     case permissionWidened
@@ -31,11 +32,13 @@ public enum RuleID: String, Codable, CaseIterable, Sendable {
 
     public var severity: Severity {
         switch self {
-        case .hookChanged, .mcpServerAdded, .mcpServerChanged, .sensitiveEnvironment, .credentialHelper,
+        case .hookChanged, .mcpServerAdded, .mcpServerChanged, .sensitiveEnvironment, .credentialHelper, .commandSetting,
              .allProjectMcpServersEnabled, .projectMcpServerApproved, .permissionWidened, .projectTrustGranted,
-             .pluginAdded, .hiddenText, .bypassInstruction, .remoteCodeExecution, .secretAccess, .encodedPayload:
+             .pluginAdded, .hiddenText, .bypassInstruction, .remoteCodeExecution, .secretAccess, .encodedPayload,
+             .malformedConfig:
+            // A file Warden cannot read may still be read by the agent, so it gets no benefit of the doubt.
             return .critical
-        case .shellCommandMentioned, .urlMentioned, .fileCreated, .fileDeleted, .malformedConfig, .otherChange:
+        case .shellCommandMentioned, .urlMentioned, .fileCreated, .fileDeleted, .otherChange:
             return .info
         }
     }

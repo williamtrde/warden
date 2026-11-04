@@ -85,6 +85,14 @@ final class WatchPolicyTests: XCTestCase {
         }
     }
 
+    func testNestedCursorSpellingsAreFolded() throws {
+        for text in [#"{"http":{"proxy":"x"}}"#, #"{"chat":{"tools":{"autoApprove":true}}}"#, #"{"terminal":{"integrated":{"env":{"osx":{"A":"b"}}}}}"#] {
+            let value = try ConfigParser.parse(Data(text.utf8), format: .jsonc)
+            let folded = cursorSettings.policy.foldingNestedKeys(of: value)
+            XCTAssertFalse(cursorSettings.policy.relevantChanges(in: StructuralDiff.compute(old: .object([:]), new: folded)).isEmpty, text)
+        }
+    }
+
     func testProjectionKeepsOnlyWatchedKeys() throws {
         let value = try ConfigParser.parse(
             Data(#"{"numStartups":1,"mcpServers":{"a":{"url":"u"}},"projects":{"/p":{"lastCost":1,"allowedTools":["x"]},"/q":{"lastCost":1}}}"#.utf8),

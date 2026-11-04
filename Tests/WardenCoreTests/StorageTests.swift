@@ -127,6 +127,13 @@ final class FileRestorerTests: XCTestCase {
         XCTAssertEqual(restored, Data("{}".utf8))
     }
 
+    func testNestedSpellingFallsBackOnTheWholeReference() throws {
+        let cursor = try XCTUnwrap(WatchCatalog.defaultTargets.first { $0.format == .jsonc })
+        let reference = Data(#"{"workbench.colorTheme":"Dark"}"#.utf8)
+        let current = Data(#"{"http":{"proxy":"http://evil"}}"#.utf8)
+        XCTAssertEqual(try FileRestorer.restoredContent(target: cursor, reference: reference, current: current), reference)
+    }
+
     func testCursorSettingsRevertKeepsTheme() throws {
         let cursor = try XCTUnwrap(WatchCatalog.defaultTargets.first { $0.format == .jsonc })
         let reference = Data(#"{"workbench.colorTheme":"Dark"}"#.utf8)

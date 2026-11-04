@@ -1,7 +1,7 @@
 import Foundation
 
 /// A parsed configuration document, independent of its source format.
-public indirect enum ConfigValue: Equatable, Sendable {
+public indirect enum ConfigValue: Sendable {
     case null
     case bool(Bool)
     case int(Int64)
@@ -62,33 +62,12 @@ public indirect enum ConfigValue: Equatable, Sendable {
 
     // MARK: - Foundation bridging
 
-    init(foundationObject object: Any) {
-        switch object {
-        case let dictionary as [String: Any]:
-            self = .object(dictionary.mapValues(ConfigValue.init(foundationObject:)))
-        case let array as [Any]:
-            self = .array(array.map(ConfigValue.init(foundationObject:)))
-        case let number as NSNumber:
-            if CFGetTypeID(number) == CFBooleanGetTypeID() {
-                self = .bool(number.boolValue)
-            } else if CFNumberIsFloatType(number) {
-                self = .double(number.doubleValue)
-            } else {
-                self = .int(number.int64Value)
-            }
-        case let string as String:
-            self = .string(string)
-        default:
-            self = .null
-        }
-    }
-
     var foundationObject: Any {
         switch self {
         case .null: return NSNull()
         case .bool(let value): return value
         case .int(let value): return value
-        case .double(let value): return value
+        case .double(let value): return value.isFinite ? value : String(value) // JSON cannot hold `nan` or `inf`.
         case .string(let value): return value
         case .array(let value): return value.map(\.foundationObject)
         case .object(let value): return value.mapValues(\.foundationObject)
@@ -101,5 +80,22 @@ public indirect enum ConfigValue: Equatable, Sendable {
             withJSONObject: foundationObject,
             options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes, .fragmentsAllowed]
         )
+    }
+}
+
+/// Compares bytes, not meaning. Swift's `==` treats canonically equivalent strings as equal, so a
+/// path swapped for a Unicode lookalike would otherwise count as unchanged.
+extension ConfigValue: Equatable {
+    public static func == (lhs: ConfigValue, rhs: ConfigValue) -> Bool {
+        switch (lhs, rhs) {
+        case (.null, .null): return true
+        case (.bool(let left), .bool(let right)): return left == right
+        case (.int(let left), .int(let right)): return left == right
+        case (.double(let left), .double(let right)): return left.bitPattern == right.bitPattern
+        case (.string(let left), .string(let right)): return left.utf8.elementsEqual(right.utf8)
+        case (.array(let left), .array(let right)): return left == right
+        case (.object(let left), .object(let right)): return left == right
+        default: return false
+        }
     }
 }

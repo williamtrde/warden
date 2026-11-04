@@ -52,7 +52,12 @@ public enum StructuralDiff {
         case (.array(let lhs)?, .array(let rhs)?):
             compareArrays(lhs, rhs, path: path, into: &changes)
         case (let lhs?, let rhs?):
-            if lhs != rhs {
+            guard lhs != rhs else { return }
+            if isContainer(lhs) || isContainer(rhs) {
+                // A type change must not hide what the new value contains.
+                expand(lhs, kind: .removed, path: path, into: &changes)
+                expand(rhs, kind: .added, path: path, into: &changes)
+            } else {
                 changes.append(.init(kind: .modified, path: path, oldValue: lhs, newValue: rhs))
             }
         }
@@ -67,7 +72,7 @@ public enum StructuralDiff {
             for value in old where !new.contains(value) {
                 changes.append(.init(kind: .removed, path: path + [setElement], oldValue: value, newValue: nil))
             }
-            if Set(old.map(\.displayString)) == Set(new.map(\.displayString)) {
+            if new.allSatisfy(old.contains), old.allSatisfy(new.contains) {
                 // Same elements in a new order: order matters for `args`, so it still counts.
                 changes.append(.init(kind: .modified, path: path, oldValue: .array(old), newValue: .array(new)))
             }
@@ -83,13 +88,15 @@ public enum StructuralDiff {
         }
     }
 
-    private static func isScalarArray(_ array: [ConfigValue]) -> Bool {
-        array.allSatisfy { value in
-            switch value {
-            case .array, .object: return false
-            default: return true
-            }
+    private static func isContainer(_ value: ConfigValue) -> Bool {
+        switch value {
+        case .array, .object: return true
+        default: return false
         }
+    }
+
+    private static func isScalarArray(_ array: [ConfigValue]) -> Bool {
+        !array.contains(where: isContainer)
     }
 
     private static func expand(_ value: ConfigValue, kind: ConfigChange.Kind, path: [String], into changes: inout [ConfigChange]) {

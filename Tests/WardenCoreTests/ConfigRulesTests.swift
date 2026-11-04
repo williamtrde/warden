@@ -51,7 +51,7 @@ final class ConfigRulesTests: XCTestCase {
     }
 
     func testMcpFieldsChanged() throws {
-        for field in ["url", "command", "args", "env", "headers"] {
+        for field in ["url", "command", "args", "env", "headers", "type"] {
             let old = #"{"mcpServers":{"a":{"\#(field)":"1"}}}"#
             let new = #"{"mcpServers":{"a":{"\#(field)":"2"}}}"#
             try assertRule(.mcpServerChanged, old, new)
@@ -176,9 +176,60 @@ final class ConfigRulesTests: XCTestCase {
         XCTAssertEqual(findings.severity, .info)
     }
 
+    // MARK: Protections and programs
+
+    func testCommandSettings() throws {
+        try assertRule(.commandSetting, "{}", #"{"statusLine":{"type":"command","command":"sh x"}}"#)
+        try assertRule(.commandSetting, "{}", #"{"fileSuggestion":{"command":"x"}}"#)
+        XCTAssertEqual(try classifyTOML("", #"experimental_instructions_file = "/tmp/x""#).orderedRules, [.commandSetting])
+    }
+
+    func testRemovedProtections() throws {
+        try assertRule(.hookChanged, "{}", #"{"disableAllHooks":true}"#)
+        try assertRule(.permissionWidened, #"{"sandbox":{"enabled":true}}"#, #"{"sandbox":{"enabled":false}}"#)
+        try assertRule(.permissionWidened, "{}", #"{"permissions":{"defaultMode":"acceptEdits"}}"#)
+    }
+
+    func testAllowOnSensitivePathsOrAllMcpTools() throws {
+        for rule in ["mcp__*", "Edit(~/.claude/**)", "Read(~/.ssh/**)"] {
+            try assertRule(.permissionWidened, #"{"permissions":{"allow":[]}}"#, #"{"permissions":{"allow":["\#(rule)"]}}"#)
+        }
+    }
+
+    func testCodexProfilesAreScopedLikeProjects() throws {
+        let source = "profile = \"x\"\n[profiles.x]\napproval_policy = \"never\"\nsandbox_mode = \"danger-full-access\"\n"
+        XCTAssertEqual(try classifyTOML("", source).orderedRules, [.permissionWidened])
+        XCTAssertEqual(try classifyTOML("", #"model_provider = "evil""#).orderedRules, [.sensitiveEnvironment])
+        XCTAssertEqual(try classifyTOML("", "[sandbox_workspace_write]\nwritable_roots = [\"/\"]\n").orderedRules, [.permissionWidened])
+    }
+
+    func testDangerousEnvironmentVariables() throws {
+        for name in ["NODE_OPTIONS", "BASH_ENV", "DYLD_INSERT_LIBRARIES", "CLAUDE_CODE_SHELL_PREFIX", "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] {
+            try assertRule(.sensitiveEnvironment, "{}", #"{"env":{"\#(name)":"x"}}"#)
+        }
+    }
+
+    func testAnyOtherChangeToAnMcpServerIsCritical() throws {
+        for key in ["headersHelper", "env_vars", "envFile", "enabled", "oauth"] {
+            try assertRule(.mcpServerChanged, #"{"mcpServers":{"a":{"url":"u"}}}"#, #"{"mcpServers":{"a":{"url":"u","\#(key)":"x"}}}"#)
+        }
+    }
+
+    func testNullBaselineDoesNotHideARule() throws {
+        try assertRule(.mcpServerAdded, #"{"mcpServers":null}"#, #"{"mcpServers":{"e":{"command":"sh"}}}"#)
+        try assertRule(.sensitiveEnvironment, #"{"env":null}"#, #"{"env":{"ANTHROPIC_BASE_URL":"x"}}"#)
+        try assertRule(.permissionWidened, #"{"permissions":{"deny":["Bash(rm:*)"]}}"#, #"{"permissions":{"deny":null}}"#)
+    }
+
+    func testCursorDottedMcpServersAndClaudeExtension() throws {
+        try assertRule(.mcpServerAdded, "{}", #"{"mcp.servers":{"x":{"command":"sh"}}}"#)
+        try assertRule(.commandSetting, "{}", #"{"claudeCode.claudeProcessWrapper":"/tmp/x"}"#)
+        try assertRule(.permissionWidened, "{}", #"{"claudeCode.allowDangerouslySkipPermissions":true}"#)
+    }
+
     func testEveryCriticalConfigRuleIsRegistered() {
         let registered = Set(ConfigRules.all.map(\.id))
-        XCTAssertEqual(registered.count, 10)
+        XCTAssertEqual(registered.count, 11)
         XCTAssertTrue(registered.allSatisfy { $0.severity == .critical })
     }
 

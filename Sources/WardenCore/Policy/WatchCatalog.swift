@@ -35,18 +35,18 @@ public enum WatchCatalog {
         "mcpContextUris/**",
         "enabledMcpjsonServers/**",
         "disabledMcpjsonServers/**",
-        "enableAllProjectMcpServers",
+        "enableAllProjectMcpServers/**",
         "allowedTools/**",
-        "hasTrustDialogAccepted",
-        "hasClaudeMdExternalIncludesApproved",
-        "bypassPermissionsModeAccepted",
-        "skipDangerousModePermissionPrompt",
+        "hasTrustDialogAccepted/**",
+        "hasClaudeMdExternalIncludesApproved/**",
+        "bypassPermissionsModeAccepted/**",
+        "skipDangerousModePermissionPrompt/**",
         "customApiKeyResponses/**",
         "env/**",
         "hooks/**",
         "permissions/**",
-        "apiKeyHelper",
-        "otelHeadersHelper",
+        "apiKeyHelper/**",
+        "otelHeadersHelper/**",
         "enabledPlugins/**",
         "extraKnownMarketplaces/**"
     ]
@@ -59,15 +59,16 @@ public enum WatchCatalog {
         "chat.*/**",
         "mcp*/**",
         "github.copilot*/**",
-        "http.proxy*",
-        "security.workspace.trust.*",
-        "task.allowAutomaticTasks",
+        "claudeCode.*/**",
+        "http.proxy*/**",
+        "security.workspace.trust.*/**",
+        "task.allowAutomaticTasks/**",
         "terminal.integrated.env.*/**",
         "terminal.integrated.profiles.*/**",
-        "terminal.integrated.defaultProfile.*",
+        "terminal.integrated.defaultProfile.*/**",
         "terminal.integrated.automationProfile.*/**",
         "terminal.integrated.shell*/**",
-        "terminal.external.*"
+        "terminal.external.*/**"
     ]
 
     static var claudeStatePolicy: WatchPolicy {

@@ -50,7 +50,8 @@ public struct LineDiff: Equatable, Sendable {
     public static func compute(old: String, new: String, context: Int = 3) -> LineDiff {
         let oldLines = splitLines(old)
         let newLines = splitLines(new)
-        let difference = newLines.difference(from: oldLines)
+        // Compared as bytes: Swift treats canonically equivalent strings as equal.
+        let difference = newLines.map { Array($0.utf8) }.difference(from: oldLines.map { Array($0.utf8) })
 
         var removed = Set<Int>()
         var inserted = Set<Int>()

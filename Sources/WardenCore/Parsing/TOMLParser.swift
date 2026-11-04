@@ -7,7 +7,7 @@ enum TOMLParser {
     static func parse(_ source: String) throws -> ConfigValue {
         var reader = Reader(source)
         var root = Table()
-        var currentPath: [Segment] = []
+        var currentPath: [String] = []
 
         while true {
             reader.skipBlankAndComments()
@@ -20,7 +20,8 @@ enum TOMLParser {
                 try reader.expect("]")
                 if isArray { try reader.expect("]") }
                 try reader.expectEndOfLine()
-                currentPath = try root.openTable(at: keys, isArray: isArray, line: reader.line)
+                try root.openTable(at: keys, isArray: isArray, line: reader.line)
+                currentPath = keys
             } else {
                 let keys = try reader.readKeyPath()
                 try reader.expect("=")
@@ -30,12 +31,6 @@ enum TOMLParser {
             }
         }
         return root.configValue
-    }
-
-    /// One step from the root: a named member, optionally entering the last element of an array of tables.
-    struct Segment {
-        let key: String
-        let entersLastElement: Bool
     }
 }
 
@@ -59,18 +54,12 @@ private struct Table {
         })
     }
 
-    /// Creates the table named by a `[header]` or `[[header]]` and returns its resolved path.
-    mutating func openTable(at keys: [String], isArray: Bool, line: Int) throws -> [TOMLParser.Segment] {
+    /// Creates the table named by a `[header]` or `[[header]]`.
+    mutating func openTable(at keys: [String], isArray: Bool, line: Int) throws {
         guard let last = keys.last else {
             throw ConfigParseError.invalidTOML(line: line, reason: "empty table header")
         }
-        var path: [TOMLParser.Segment] = []
-        for key in keys.dropLast() {
-            let isTableArray: Bool
-            if case .tableArray = members(at: path)?[key] { isTableArray = true } else { isTableArray = false }
-            path.append(.init(key: key, entersLastElement: isTableArray))
-        }
-        try update(path, line: line) { table in
+        try update(Array(keys.dropLast()), line: line) { table in
             if isArray {
                 if case .tableArray(var tables) = table.members[last] {
                     tables.append(Table())
@@ -82,67 +71,54 @@ private struct Table {
                 table.members[last] = .table(Table())
             }
         }
-        path.append(.init(key: last, entersLastElement: isArray))
-        return path
     }
 
-    mutating func set(_ value: ConfigValue, at keys: [String], under base: [TOMLParser.Segment], line: Int) throws {
+    mutating func set(_ value: ConfigValue, at keys: [String], under base: [String], line: Int) throws {
         guard let last = keys.last else {
             throw ConfigParseError.invalidTOML(line: line, reason: "empty key")
         }
-        let path = base + keys.dropLast().map { TOMLParser.Segment(key: $0, entersLastElement: false) }
-        try update(path, line: line) { $0.members[last] = .value(value) }
-    }
-
-    private func members(at path: [TOMLParser.Segment]) -> [String: Node]? {
-        var table = self
-        for segment in path {
-            switch table.members[segment.key] {
-            case .table(let next): table = next
-            case .tableArray(let tables):
-                guard let next = tables.last else { return nil }
-                table = next
-            default: return nil
-            }
-        }
-        return table.members
+        try update(base + keys.dropLast(), line: line) { $0.members[last] = .value(value) }
     }
 
     private mutating func update(
-        _ path: [TOMLParser.Segment],
+        _ path: [String],
         line: Int,
         _ body: (inout Table) throws -> Void
     ) throws {
-        guard let segment = path.first else {
+        guard let key = path.first else {
             try body(&self)
             return
         }
         let rest = Array(path.dropFirst())
-        switch members[segment.key] {
+        switch members[key] {
         case nil:
             var child = Table()
             try child.update(rest, line: line, body)
-            members[segment.key] = .table(child)
+            members[key] = .table(child)
         case .table(var child):
             try child.update(rest, line: line, body)
-            members[segment.key] = .table(child)
+            members[key] = .table(child)
         case .tableArray(var tables):
             guard var child = tables.popLast() else {
                 throw ConfigParseError.invalidTOML(line: line, reason: "empty array of tables")
             }
             try child.update(rest, line: line, body)
             tables.append(child)
-            members[segment.key] = .tableArray(tables)
+            members[key] = .tableArray(tables)
         case .value:
-            throw ConfigParseError.invalidTOML(line: line, reason: "key \(segment.key) is not a table")
+            throw ConfigParseError.invalidTOML(line: line, reason: "key \(key) is not a table")
         }
     }
 }
 
 /// Character-level cursor.
 private struct Reader {
+    /// Beyond this, a document is refused rather than risking a stack overflow on crafted input.
+    private static let maxDepth = 128
+
     private let scalars: [Unicode.Scalar]
     private var index = 0
+    private var depth = 0
     private(set) var line = 1
 
     init(_ source: String) {
@@ -172,10 +148,7 @@ private struct Reader {
 
     mutating func skipComment() {
         guard peek == "#" else { return }
-        while let scalar = peek, scalar != "\n" {
-            _ = scalar
-            advance()
-        }
+        while peek != nil, peek != "\n" { advance() }
     }
 
     mutating func skipBlankAndComments() {
@@ -210,6 +183,7 @@ private struct Reader {
             skipInlineSpace()
             keys.append(try readKey())
             skipInlineSpace()
+            guard keys.count <= Self.maxDepth else { throw failure("key nested too deeply") }
         } while peek == "."
         return keys
     }
@@ -231,6 +205,9 @@ private struct Reader {
     }
 
     mutating func readValue() throws -> ConfigValue {
+        depth += 1
+        defer { depth -= 1 }
+        guard depth <= Self.maxDepth else { throw failure("value nested too deeply") }
         skipInlineSpace()
         guard let scalar = peek else { throw failure("expected a value") }
         switch scalar {
@@ -271,15 +248,17 @@ private struct Reader {
         while let scalar = peek {
             if scalar == quote, peek(offset: 1) == quote, peek(offset: 2) == quote {
                 advance(by: 3)
+                // Up to two quotes may directly precede the closing delimiter.
+                for _ in 0..<2 where peek == quote {
+                    text.append(quote)
+                    advance()
+                }
                 return String(text)
             }
             advance()
             if scalar == "\\", quote == "\"" {
-                if peek == "\n" || peek == "\r" {
-                    while let next = peek, next.properties.isWhitespace {
-                        _ = next
-                        advance()
-                    }
+                if isLineEndingBackslash {
+                    while peek?.properties.isWhitespace == true { advance() }
                 } else {
                     try appendEscape(to: &text)
                 }
@@ -288,6 +267,13 @@ private struct Reader {
             }
         }
         throw failure("unterminated multiline string")
+    }
+
+    /// True when only blanks separate the backslash just read from the end of the line.
+    private var isLineEndingBackslash: Bool {
+        var offset = 0
+        while peek(offset: offset) == " " || peek(offset: offset) == "\t" { offset += 1 }
+        return peek(offset: offset) == "\n" || peek(offset: offset) == "\r"
     }
 
     private mutating func appendEscape(to text: inout String.UnicodeScalarView) throws {
