@@ -8,9 +8,11 @@
 - Task 18: scripts/demo.sh, scripts/capture-docs.sh, screenshots and GIF in docs/ (app icon was already in place).
 - R3: independent review of the app layer, all 11 findings fixed.
 - Task 19: README, CONTRIBUTING, table guarded by ReadmeTests.
+- Task 20: scripts/release.sh.
+- R4: final independent review, majors fixed (commit e21047f).
 
 ## In progress
-- Task 20: release script.
+- Signed and notarized build of the final commit.
 
 ## Remaining
-- R4, task 21 (see PLAN.md).
+- Task 21: publish the repository and release v1.0.0.
