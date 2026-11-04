@@ -21,7 +21,7 @@ Warden does not block anything. It makes these changes impossible to miss.
 
 Download the DMG from the [latest release](https://github.com/williamtrde/warden/releases/latest) and drag Warden to Applications. It is signed and notarized.
 
-Requires macOS 14 or later. Explanations from the on-device model need macOS 26 and Apple Intelligence; without them, Warden uses its built-in rules and works the same way.
+Requires macOS 14 or later, and has so far been tested on macOS 26. Explanations from the on-device model need macOS 26 and Apple Intelligence; without them, Warden uses its built-in rules and works the same way.
 
 ## How it works
 
@@ -50,7 +50,7 @@ Warden never reverts anything by itself. You always decide.
 | Files you add | Any | Every change | The whole file |
 <!-- watch-table:end -->
 
-Claude Code and Cursor rewrite two of these files constantly for routine reasons, so only the keys below count there. Everything else stays silent, and Revert leaves it untouched.
+Claude Code and Cursor rewrite two of these files constantly for routine reasons, so only the keys below count there. Everything else stays silent. Revert puts those keys back and keeps the other values, but it rewrites the file, so comments and formatting can change. A backup is saved first.
 
 <!-- watch-keys:start -->
 **`~/.claude.json`**, at top level and inside every `projects.<path>`: `mcpServers`, `mcpContextUris`, `enabledMcpjsonServers`, `disabledMcpjsonServers`, `enableAllProjectMcpServers`, `allowedTools`, `hasTrustDialogAccepted`, `hasClaudeMdExternalIncludesApproved`, `bypassPermissionsModeAccepted`, `skipDangerousModePermissionPrompt`, `customApiKeyResponses`, `env`, `hooks`, `permissions`, `apiKeyHelper`, `otelHeadersHelper`, `enabledPlugins`, `extraKnownMarketplaces`.
@@ -67,16 +67,18 @@ Claude Code and Cursor rewrite two of these files constantly for routine reasons
 ## Security model
 
 - **Rules decide, the model only writes.** A changed file is attacker-controlled input. Severity and the recommendation always come from the rules. For critical changes, the statement of what changed does too. The model phrases the rest, and its output is validated and discarded if it fails.
-- **No network.** The app is not sandboxed, so no entitlement can prove this. Instead, a test scans the sources and fails on any networking API.
-- **Secrets are masked** before they reach the model, and in everything Warden displays.
+- **No network.** The app is not sandboxed, so no entitlement can prove this. Instead, a test scans the sources and fails on known networking APIs.
+- **Recognized secrets are masked** before they reach the model, and in everything Warden displays. Masking relies on patterns, so an unusual format can get through.
 - **Usage context is metadata only.** To name the projects a change affects, Warden reads project keys, folder names and modification dates. It never reads session content or your code, and a test enforces it.
 - **Private storage.** Copies live in `~/Library/Application Support/Warden/` with 0700 and 0600 permissions, because they contain whatever the originals contain.
 
 ### Limits
 
-Warden detects, it does not prevent. A change is live until you revert it, and a process running as you can also tamper with Warden's own storage. If Warden's state is damaged, it rebuilds references from its history and tells you. It does not identify which app made a change, and it does not watch per-repository config files.
+Warden detects, it does not prevent. A change is live until you revert it. If Warden's state is damaged or missing, it rebuilds its references from its history and tells you, but a process running as you can also forge that state or wipe the history, and Warden cannot detect that. It does not identify which app made a change, and it does not watch per-repository config files.
 
 ## Build from source
+
+Needs Xcode 26.
 
 ```sh
 brew install xcodegen swiftlint

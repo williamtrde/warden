@@ -71,7 +71,7 @@ final class AppModel {
                 if await engine.currentSnapshot().stateResetAt != nil {
                     self?.notifications.postNotice(
                         title: String(localized: "Warden's records were damaged and rebuilt"),
-                        body: String(localized: "Check your watched files. Files you added yourself must be added again.")
+                        body: String(localized: "Warden rebuilt its references from its history. Review any change it reports.")
                     )
                 }
             }

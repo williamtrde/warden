@@ -119,7 +119,8 @@ public enum ChangeAnalyzer {
         return ChangeAnalysis(
             findings: masked,
             diff: diff,
-            fingerprint: WardenStore.hash(Data(diff.unifiedText.utf8)),
+            // Hashes the real text: two different secrets can mask to the same marker.
+            fingerprint: WardenStore.hash(Data((oldText + "\u{0}" + newText).utf8)),
             isMalformed: false
         )
     }

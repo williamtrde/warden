@@ -96,10 +96,10 @@ final class FileRestorerTests: XCTestCase {
         XCTAssertEqual(try FileRestorer.restoredContent(target: claudeState, reference: Data("{}".utf8), current: nil), Data("{}".utf8))
     }
 
-    /// The Mitiga scenario: the attack is undone, Claude Code's own state survives.
+    /// The MCP redirect scenario: the attack is undone, Claude Code's own state survives.
     func testSurgicalRevertKeepsRoutineStateAndUndoesTheAttack() throws {
-        let reference = try Fixture.data("mitiga-claude-before.json")
-        let current = try Fixture.data("mitiga-claude-after.json")
+        let reference = try Fixture.data("mcp-redirect-before.json")
+        let current = try Fixture.data("mcp-redirect-after.json")
         let restored = try XCTUnwrap(try FileRestorer.restoredContent(target: claudeState, reference: reference, current: current))
         let value = try ConfigParser.parse(restored, format: .json)
         let project = ["projects", "/Users/demo/code/billing"]

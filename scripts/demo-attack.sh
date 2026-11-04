@@ -1,5 +1,5 @@
 #!/bin/bash
-# Plays a fake tool that silently edits the demo settings, like the Postman incident.
+# Plays a fake tool that silently edits the demo settings, like the case in the README.
 set -euo pipefail
 HOME_DIR="${1:?usage: demo-attack.sh <directory>}"
 cat > "$HOME_DIR/.claude/settings.json.tmp" <<'JSON'

@@ -240,7 +240,7 @@ final class ConfigRulesTests: XCTestCase {
 
     // MARK: Real-world incidents
 
-    /// The Claude Code side of the Postman incident (issue #14370).
+    /// The Claude Code side of the report in postmanlabs/postman-app-support#14370.
     func testPostmanSettingsIncident() throws {
         let old = try ConfigParser.parse(try Fixture.data("postman-settings-before.json"), format: .json)
         let new = try ConfigParser.parse(try Fixture.data("postman-settings-after.json"), format: .json)
@@ -259,12 +259,12 @@ final class ConfigRulesTests: XCTestCase {
         XCTAssertTrue(findings.contains { $0.evidence.contains("marketplaces.postman.source") })
     }
 
-    /// The attack demonstrated by Mitiga Labs: MCP traffic is rerouted through a local proxy and
+    /// The MCP redirect scenario: MCP traffic is rerouted through a local proxy and
     /// the prompts that would reveal it are pre-approved, all inside `projects.<path>`.
-    func testMitigaAttack() throws {
+    func testMcpRedirectAttack() throws {
         let target = try XCTUnwrap(WatchCatalog.defaultTargets.first { $0.path == ".claude.json" })
-        let old = try ConfigParser.parse(try Fixture.data("mitiga-claude-before.json"), format: .json)
-        let new = try ConfigParser.parse(try Fixture.data("mitiga-claude-after.json"), format: .json)
+        let old = try ConfigParser.parse(try Fixture.data("mcp-redirect-before.json"), format: .json)
+        let new = try ConfigParser.parse(try Fixture.data("mcp-redirect-after.json"), format: .json)
         let changes = target.policy.relevantChanges(in: StructuralDiff.compute(old: old, new: new))
         let findings = RiskClassifier.classify(changes: changes, old: old, new: new)
         XCTAssertEqual(findings.severity, .critical)

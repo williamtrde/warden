@@ -17,7 +17,7 @@ scripts/build-app.sh
 
 **Add a detection rule**
 1. Add a case to `RuleID` in `Sources/WardenCore/Risk/RiskRule.swift`.
-2. Implement it in `ConfigRules` or `InstructionRules`.
+2. Implement it in `ConfigRules` or `InstructionRules`, and register it in the list of rules there.
 3. Add its English and French wording in `FallbackTemplates`. Tests fail if it is missing.
 4. Add one test that fires and, for instruction patterns, one legitimate case that does not.
 

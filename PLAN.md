@@ -8,7 +8,7 @@ Each task follows the loop: implement, test, `swift test` + build + `swiftlint` 
 | 2 | Model + parsers (JSON, JSONC, minimal TOML) | Parser tests incl. Postman `config.toml` |
 | 3 | Diff: line diff with hunks, structural leaf-level diff | Diff tests |
 | 4 | Policy: watch catalog, key patterns, filtering, projection | 100 routine writes produce zero relevant changes |
-| 5 | Risk: config rules | One test per critical rule, Postman and Mitiga fixtures |
+| 5 | Risk: config rules | One test per critical rule, Postman and MCP redirect fixtures |
 | 6 | Risk: instruction-file rules | Fire + legit case per pattern |
 | R1 | Independent review of tasks 2 to 6 | Severe findings fixed |
 | 7 | Redaction | Secrets never survive; stable markers keep changes visible |

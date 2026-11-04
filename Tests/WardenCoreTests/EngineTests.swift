@@ -128,10 +128,10 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(versionsBefore, versionsAfter)
     }
 
-    func testMitigaChangeAmongRoutineWritesIsCaught() async throws {
-        try home.write(String(data: try Fixture.data("mitiga-claude-before.json"), encoding: .utf8)!, to: state)
+    func testRedirectedMcpServerAmongRoutineWritesIsCaught() async throws {
+        try home.write(String(data: try Fixture.data("mcp-redirect-before.json"), encoding: .utf8)!, to: state)
         try await start()
-        try home.write(String(data: try Fixture.data("mitiga-claude-after.json"), encoding: .utf8)!, to: state)
+        try home.write(String(data: try Fixture.data("mcp-redirect-after.json"), encoding: .utf8)!, to: state)
         await engine.scanAll()
         let change = try await XCTUnwrapAsync(await pending(state))
         XCTAssertEqual(change.severity, .critical)
@@ -198,6 +198,63 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(change.severity, .critical)
         try await engine.revert(path: settings)
         XCTAssertEqual(try home.read(settings), "{}")
+    }
+
+    func testDeletingTheStateCannotLaunderAModifiedFile() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        await engine.stop()
+        try FileManager.default.removeItem(at: stateFile)
+        try home.write(#"{"hooks":{"Stop":[{"command":"evil"}]}}"#, to: settings)
+
+        try await start()
+        let change = try await XCTUnwrapAsync(await pending(settings))
+        XCTAssertEqual(change.severity, .critical)
+        let reset = await engine.currentSnapshot().stateResetAt
+        XCTAssertNotNil(reset)
+    }
+
+    func testEmptyingTheStateCountsAsDamage() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        await engine.stop()
+        try Data("{}".utf8).write(to: stateFile)
+        try home.write(#"{"hooks":{"Stop":[{"command":"evil"}]}}"#, to: settings)
+
+        try await start()
+        let change = try await XCTUnwrapAsync(await pending(settings))
+        XCTAssertEqual(change.severity, .critical)
+    }
+
+    /// A file that did not exist has no history: it must not become its own reference.
+    func testFileCreatedWhileTheStateIsDamagedIsReported() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        await engine.stop()
+        try Data("not json".utf8).write(to: stateFile)
+        let local = ".claude/settings.local.json"
+        try home.write(#"{"hooks":{"Stop":[{"command":"evil"}]}}"#, to: local)
+
+        try await start()
+        let change = try await XCTUnwrapAsync(await pending(local))
+        XCTAssertEqual(change.severity, .critical)
+        try await engine.revert(path: local)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: home.url.appendingPathComponent(local).path))
+    }
+
+    func testCustomFilesSurviveAReset() async throws {
+        let custom = "notes/agent.md"
+        try home.write("hello", to: custom)
+        try await start()
+        await engine.addFile(url: home.url.appendingPathComponent(custom))
+        await engine.stop()
+        try Data("not json".utf8).write(to: stateFile)
+
+        try await start()
+        let paths = await engine.currentSnapshot().files.map(\.record.path)
+        XCTAssertTrue(paths.contains(custom))
+        let change = await pending(custom)
+        XCTAssertNil(change)
     }
 
     func testRebuiltReferenceIsTheLatestAcceptedVersion() async throws {
@@ -317,9 +374,9 @@ final class EngineTests: XCTestCase {
     }
 
     func testSurgicalRevertThroughTheEngine() async throws {
-        try home.write(String(data: try Fixture.data("mitiga-claude-before.json"), encoding: .utf8)!, to: state)
+        try home.write(String(data: try Fixture.data("mcp-redirect-before.json"), encoding: .utf8)!, to: state)
         try await start()
-        try home.write(String(data: try Fixture.data("mitiga-claude-after.json"), encoding: .utf8)!, to: state)
+        try home.write(String(data: try Fixture.data("mcp-redirect-after.json"), encoding: .utf8)!, to: state)
         await engine.scanAll()
         try await engine.revert(path: state)
         let value = try ConfigParser.parse(Data(try home.read(state).utf8), format: .json)

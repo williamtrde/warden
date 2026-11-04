@@ -84,8 +84,11 @@ private struct HistoryDetail: View {
     @State private var diff: LineDiff?
     @State private var isConfirming = false
 
-    /// The version a user would want back: what this event produced, or what it saved.
-    private var restorableSHA: String? { entry.versionSHA ?? entry.backupSHA }
+    /// The version a user would want back. After a revert or a restore that is the copy saved
+    /// before overwriting; otherwise it is what the event produced.
+    private var restorableSHA: String? {
+        [.reverted, .restored].contains(entry.kind) ? entry.backupSHA ?? entry.versionSHA : entry.versionSHA ?? entry.backupSHA
+    }
 
     var body: some View {
         ScrollView {

@@ -65,24 +65,35 @@ public actor WardenEngine {
     public init(configuration: Configuration) throws {
         self.configuration = configuration
         let loaded = try configuration.store.loadStateRecovering()
-        state = loaded.state
-        history = configuration.store.loadHistory()
-        if loaded.wasDamaged {
-            state.baselines = Self.baselines(from: history)
-            state.stateResetAt = configuration.now()
-        }
+        let history = configuration.store.loadHistory()
+        self.history = history
+        // No files with a history behind them means the state was removed, which is damage too.
+        let isDamaged = loaded.wasDamaged || (loaded.state.files.isEmpty && !history.isEmpty)
+        state = isDamaged
+            ? Self.rebuiltState(from: history, home: configuration.home, date: configuration.now())
+            : loaded.state
         (snapshots, snapshotContinuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(1))
         (alerts, alertContinuation) = AsyncStream.makeStream()
     }
 
-    /// The references the history proves, so that damaging the state cannot turn a
-    /// modified file into its own reference. `history` is newest first.
-    private static func baselines(from history: [HistoryEntry]) -> [String: FileVersionRef] {
-        var baselines: [String: FileVersionRef] = [:]
-        for entry in history where [.baselineCreated, .accepted, .restored].contains(entry.kind) && baselines[entry.path] == nil {
-            baselines[entry.path] = FileVersionRef(sha256: entry.versionSHA, date: entry.date)
+    /// Rebuilds what the history proves, so that damaging the state cannot turn a modified file
+    /// into its own reference. A file with no proven version counts as "did not exist": if it is
+    /// there, it gets reported instead of absorbed. `history` is newest first.
+    private static func rebuiltState(from history: [HistoryEntry], home: URL, date: Date) -> WardenState {
+        var state = WardenState()
+        state.stateResetAt = date
+        state.files = WatchCatalog.defaultTargets.map { WatchedFileRecord(target: $0, isBuiltIn: true) }
+        for entry in history where !state.files.contains(where: { $0.path == entry.path }) {
+            let url = entry.path.hasPrefix("/") ? URL(fileURLWithPath: entry.path) : home.appendingPathComponent(entry.path)
+            state.files.append(WatchedFileRecord(target: WatchCatalog.customTarget(url: url, home: home), isBuiltIn: false))
         }
-        return baselines
+        for entry in history where [.baselineCreated, .accepted, .restored].contains(entry.kind) && state.baselines[entry.path] == nil {
+            state.baselines[entry.path] = FileVersionRef(sha256: entry.versionSHA, date: entry.date)
+        }
+        for record in state.files where state.baselines[record.path] == nil {
+            state.baselines[record.path] = FileVersionRef(sha256: nil, date: date)
+        }
+        return state
     }
 
     // MARK: - Lifecycle

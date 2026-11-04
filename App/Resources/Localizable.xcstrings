@@ -134,12 +134,12 @@
         }
       }
     },
-    "Check your watched files. Files you added yourself must be added again.": {
+    "Changes will be checked when you resume.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vérifie tes fichiers surveillés. Ceux que tu avais ajoutés toi-même sont à ajouter de nouveau."
+            "value": "Les changements seront vérifiés à la reprise."
           }
         }
       }
@@ -640,6 +640,16 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Warden rebuilt its references from its history. Review any change it reports.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warden a reconstruit ses références depuis son historique. Examine les changements qu'il signale."
           }
         }
       }

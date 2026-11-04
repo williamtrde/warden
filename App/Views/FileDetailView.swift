@@ -54,6 +54,7 @@ private struct ChangeDetailView: View {
             .padding(20)
         }
         .task(id: change.fingerprint) {
+            diff = nil // Never show the previous diff beside the buttons of a newer change.
             diff = await model.diff(for: change)
         }
     }

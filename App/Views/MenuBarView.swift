@@ -28,7 +28,12 @@ struct MenuBarView: View {
                 resetNotice
                 Divider()
             }
-            if model.snapshot.pending.isEmpty {
+            if model.snapshot.pending.isEmpty, model.snapshot.isPaused {
+                Text("Changes will be checked when you resume.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(14)
+            } else if model.snapshot.pending.isEmpty {
                 Text("Warden is watching \(watchedCount) files.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -49,7 +54,7 @@ struct MenuBarView: View {
 
     private var resetNotice: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Check your watched files. Files you added yourself must be added again.")
+            Text("Warden rebuilt its references from its history. Review any change it reports.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -80,6 +85,7 @@ struct MenuBarView: View {
             MenuRow(title: model.snapshot.isPaused ? "Resume Monitoring" : "Pause Monitoring") {
                 model.setPaused(!model.snapshot.isPaused)
             }
+            .disabled(model.startupError != nil)
             MenuRow(title: "Settings…") { model.openSettings() }
             MenuRow(title: "Quit Warden") { NSApp.terminate(nil) }
         }
