@@ -13,3 +13,4 @@
 | 2026-11-04 | Decisions carry the fingerprint of the change the user saw; a mismatch opens the window instead of deciding | A newer change must never be accepted unseen |
 | 2026-11-04 | For critical changes, "What changed" always comes from the rules, the model only phrases the impact | The model misread a diff during the demo, and this sentence is also the notification |
 | 2026-11-04 | A pause only shows the paused icon when nothing is pending | Spec item 1: a pending critical change must stay visible |
+| 2026-11-04 | README cites the Postman case as a public report and links it; the Mitiga scenario is described without naming Mitiga | The Postman issue was re-read (log timestamp confirms October 24). No source could be found for Mitiga, so the README makes no claim about it |

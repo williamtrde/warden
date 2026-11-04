@@ -7,9 +7,10 @@
 - Tasks 14 to 17: menu bar app, notifications, main window, settings, en + fr catalog (commit 6dfc79d).
 - Task 18: scripts/demo.sh, scripts/capture-docs.sh, screenshots and GIF in docs/ (app icon was already in place).
 - R3: independent review of the app layer, all 11 findings fixed.
+- Task 19: README, CONTRIBUTING, table guarded by ReadmeTests.
 
 ## In progress
-- Task 19: README, CONTRIBUTING.
+- Task 20: release script.
 
 ## Remaining
-- Tasks 20, 21 and R4 (see PLAN.md).
+- R4, task 21 (see PLAN.md).
