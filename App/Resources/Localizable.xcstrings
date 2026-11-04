@@ -554,6 +554,16 @@
         }
       }
     },
+    "This version is already the reference.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette version est déjà la référence."
+          }
+        }
+      }
+    },
     "Use on-device AI for explanations": {
       "localizations": {
         "fr": {

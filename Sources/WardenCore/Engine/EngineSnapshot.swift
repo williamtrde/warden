@@ -12,6 +12,8 @@ public struct FileStatus: Equatable, Sendable, Identifiable {
     public let record: WatchedFileRecord
     public let exists: Bool
     public let baselineDate: Date?
+    /// The hash of the reference, nil when the reference is "the file did not exist".
+    public let baselineSHA: String?
     public let pending: PendingChange?
 
     public var id: String { record.id }

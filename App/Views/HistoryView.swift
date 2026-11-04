@@ -98,7 +98,9 @@ private struct HistoryDetail: View {
                 if let summary = entry.summary {
                     Text(verbatim: summary).textSelection(.enabled)
                 }
-                if let sha = restorableSHA {
+                if isCurrentReference {
+                    Text("This version is already the reference.").font(.callout).foregroundStyle(.secondary)
+                } else if let sha = restorableSHA {
                     Button("Restore This Version") { isConfirming = true }
                         .confirmationDialog("Restore this version?", isPresented: $isConfirming) {
                             Button("Restore") { model.restore(path: entry.path, sha: sha) }
@@ -115,14 +117,17 @@ private struct HistoryDetail: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .task {
-            let status = model.snapshot.files.first { $0.id == entry.path }
-            let reference = status?.pending?.beforeSHA ?? currentReference
-            diff = await model.diff(path: entry.path, fromSHA: reference, toSHA: restorableSHA)
+            diff = await model.diff(path: entry.path, fromSHA: status?.baselineSHA, toSHA: restorableSHA)
         }
     }
 
-    /// The latest version in the history of this file.
-    private var currentReference: String? {
-        model.snapshot.history.first { $0.path == entry.path && [.accepted, .baselineCreated, .restored].contains($0.kind) }?.versionSHA
+    private var status: FileStatus? {
+        model.snapshot.files.first { $0.id == entry.path }
+    }
+
+    /// With a change pending the file differs from its reference, so restoring still has a job to do.
+    private var isCurrentReference: Bool {
+        guard let status, status.pending == nil, let sha = restorableSHA else { return false }
+        return sha == status.baselineSHA
     }
 }

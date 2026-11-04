@@ -186,6 +186,8 @@ final class AppModel {
         switch error {
         case EngineError.unknownFile:
             return String(localized: "This file is no longer watched.")
+        case EngineError.alreadyReference:
+            return String(localized: "This version is already the reference.")
         case EngineError.noPendingChange, EngineError.changeSuperseded:
             return String(localized: "This change is no longer waiting for a decision.")
         case is StoreError:

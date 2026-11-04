@@ -5,6 +5,8 @@ public enum EngineError: Error, Equatable {
     case unknownFile
     /// The file changed again: the decision was about a version that is no longer the pending one.
     case changeSuperseded
+    /// Restoring would change nothing: this version is the reference and the file matches it.
+    case alreadyReference
 }
 
 /// Coordinates watching, analysis, explanation and decisions. Never changes a watched file
@@ -290,6 +292,10 @@ public actor WardenEngine {
     public func restore(path: String, sha: String) throws {
         guard let record = state.files.first(where: { $0.path == path }) else { throw EngineError.unknownFile }
         let version = try store.loadVersion(sha)
+        if state.baselines[path]?.sha256 == sha,
+           ChangeAnalyzer.analyze(target: record.target, old: version, new: read(record.target)) == nil {
+            throw EngineError.alreadyReference
+        }
         let backup = try overwrite(record.target, with: version)
         let date = configuration.now()
         state.baselines[path] = FileVersionRef(sha256: sha, date: date)
@@ -337,6 +343,7 @@ public actor WardenEngine {
                 record: record,
                 exists: FileManager.default.fileExists(atPath: record.target.url(home: configuration.home).path),
                 baselineDate: state.baselines[record.path]?.date,
+                baselineSHA: state.baselines[record.path]?.sha256,
                 pending: state.pending[record.path]
             )
         }
