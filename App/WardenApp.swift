@@ -23,6 +23,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         model.start()
+        #if DEBUG
+        // Used by scripts/demo.sh, so the demo starts on the main window.
+        if ProcessInfo.processInfo.environment["WARDEN_OPEN_WINDOW"] != nil { model.openWindow() }
+        #endif
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

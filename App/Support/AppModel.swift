@@ -61,6 +61,12 @@ final class AppModel {
             for await change in engine.alerts {
                 self?.notifications.post(change)
                 self?.snapshot = await engine.currentSnapshot()
+                #if DEBUG
+                // Keeps the demo on screen: see scripts/demo.sh.
+                if ProcessInfo.processInfo.environment["WARDEN_OPEN_WINDOW"] != nil {
+                    self?.openWindow(selecting: .file(change.path))
+                }
+                #endif
             }
         }
     }
