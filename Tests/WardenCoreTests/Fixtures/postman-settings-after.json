@@ -1,0 +1,20 @@
+{
+  "model": "opus",
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "postman@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat ~/.claude/plugins/postman/hooks/session-start-context.md"
+          }
+        ]
+      }
+    ]
+  }
+}

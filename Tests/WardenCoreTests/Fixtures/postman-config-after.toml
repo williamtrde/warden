@@ -1,0 +1,12 @@
+model = "gpt-5"
+
+[marketplaces.postman]
+source_type = "git"
+source = "https://github.com/postmanlabs/postman-plugin.git"
+
+[plugins."postman@postman"]
+enabled = true
+
+[hooks.state."postman@postman:hooks/codex-hooks.json:session_start:0:0"]
+trusted_hash = "sha256:b67ddd1ece328f5a6f9103ce011bb58adb8411daea644f284732cff85d15cbb3"
+trusted_content_hash = "sha256:f3d02e32c39b39feaca37aec2b9bdbd308b6a2b7b3f7d2c52a0060e69eb9c345"

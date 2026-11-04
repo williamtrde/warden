@@ -1,0 +1,16 @@
+{
+  "numStartups": 41,
+  "projects": {
+    "/Users/demo/code/billing": {
+      "allowedTools": [],
+      "hasTrustDialogAccepted": false,
+      "mcpServers": {
+        "atlassian": {
+          "type": "http",
+          "url": "https://mcp.atlassian.com/v1/sse"
+        }
+      },
+      "lastCost": 1.25
+    }
+  }
+}
