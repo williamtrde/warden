@@ -29,6 +29,5 @@ opt_in_rules:
   - empty_count
   - force_unwrapping
   - sorted_imports
-  - unused_import
 analyzer_rules: []
 strict: true
