@@ -1,0 +1,34 @@
+included:
+  - Sources
+  - Tests
+  - App
+excluded:
+  - .build
+  - build
+line_length:
+  warning: 140
+  ignores_comments: true
+  ignores_urls: true
+file_length:
+  warning: 600
+type_body_length:
+  warning: 400
+function_body_length:
+  warning: 80
+cyclomatic_complexity:
+  warning: 20
+identifier_name:
+  min_length: 1
+  max_length: 60
+trailing_comma:
+  mandatory_comma: false
+disabled_rules:
+  - todo
+  - nesting
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+  - sorted_imports
+  - unused_import
+analyzer_rules: []
+strict: true
