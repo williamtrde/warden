@@ -62,7 +62,12 @@ private struct HistoryRow: View {
                 .frame(width: 18)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
-                Text(entry.kind.title).font(.callout.weight(.medium))
+                HStack(spacing: 6) {
+                    Text(entry.kind.title).font(.callout.weight(.medium))
+                    if let severity = entry.severity {
+                        Text(severity.title).font(.caption2).foregroundStyle(severity.color)
+                    }
+                }
                 Text(verbatim: entry.path).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
             }
             Spacer()
@@ -86,7 +91,7 @@ private struct HistoryDetail: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 Text(entry.kind.title).font(.title3.weight(.semibold))
-                Text(verbatim: "~/\(entry.path)").font(.callout).foregroundStyle(.secondary)
+                Text(verbatim: entry.path.hasPrefix("/") ? entry.path : "~/\(entry.path)").font(.callout).foregroundStyle(.secondary)
                 if let summary = entry.summary {
                     Text(verbatim: summary).textSelection(.enabled)
                 }

@@ -3,6 +3,8 @@ import Foundation
 public enum EngineError: Error, Equatable {
     case noPendingChange
     case unknownFile
+    /// The file changed again: the decision was about a version that is no longer the pending one.
+    case changeSuperseded
 }
 
 /// Coordinates watching, analysis, explanation and decisions. Never changes a watched file
@@ -62,10 +64,25 @@ public actor WardenEngine {
 
     public init(configuration: Configuration) throws {
         self.configuration = configuration
-        state = try configuration.store.loadState()
+        let loaded = try configuration.store.loadStateRecovering()
+        state = loaded.state
         history = configuration.store.loadHistory()
+        if loaded.wasDamaged {
+            state.baselines = Self.baselines(from: history)
+            state.stateResetAt = configuration.now()
+        }
         (snapshots, snapshotContinuation) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(1))
         (alerts, alertContinuation) = AsyncStream.makeStream()
+    }
+
+    /// The references the history proves, so that damaging the state cannot turn a
+    /// modified file into its own reference. `history` is newest first.
+    private static func baselines(from history: [HistoryEntry]) -> [String: FileVersionRef] {
+        var baselines: [String: FileVersionRef] = [:]
+        for entry in history where [.baselineCreated, .accepted, .restored].contains(entry.kind) && baselines[entry.path] == nil {
+            baselines[entry.path] = FileVersionRef(sha256: entry.versionSHA, date: entry.date)
+        }
+        return baselines
     }
 
     // MARK: - Lifecycle
@@ -221,10 +238,17 @@ public actor WardenEngine {
 
     // MARK: - Decisions
 
+    private func pendingChange(path: String, fingerprint: String?) throws -> PendingChange {
+        guard let change = state.pending[path] else { throw EngineError.noPendingChange }
+        if let fingerprint, fingerprint != change.fingerprint { throw EngineError.changeSuperseded }
+        return change
+    }
+
     /// Makes the version the user reviewed the new reference. If the file changed again
     /// since then, the next scan raises that newer change instead of silently accepting it.
-    public func accept(path: String) async throws {
-        guard let change = state.pending[path] else { throw EngineError.noPendingChange }
+    /// Pass the `fingerprint` of the change the user saw: a newer one is never decided unseen.
+    public func accept(path: String, fingerprint: String? = nil) async throws {
+        let change = try pendingChange(path: path, fingerprint: fingerprint)
         let date = configuration.now()
         state.baselines[path] = FileVersionRef(sha256: change.afterSHA, date: date)
         state.pending[path] = nil
@@ -234,8 +258,8 @@ public actor WardenEngine {
     }
 
     /// Restores the reference, after saving the modified version.
-    public func revert(path: String) throws {
-        guard let change = state.pending[path] else { throw EngineError.noPendingChange }
+    public func revert(path: String, fingerprint: String? = nil) throws {
+        let change = try pendingChange(path: path, fingerprint: fingerprint)
         guard let record = state.files.first(where: { $0.path == path }) else { throw EngineError.unknownFile }
         let reference = try state.baselines[path]?.sha256.map(store.loadVersion)
         let backup = try overwrite(record.target, with: reference)
@@ -295,6 +319,7 @@ public actor WardenEngine {
         var snapshot = EngineSnapshot()
         snapshot.isPaused = state.isPaused
         snapshot.isOnDeviceAIEnabled = state.isOnDeviceAIEnabled
+        snapshot.stateResetAt = state.stateResetAt
         snapshot.history = history
         snapshot.files = state.files.map { record in
             FileStatus(
@@ -315,6 +340,11 @@ public actor WardenEngine {
         restartWatching()
         // Changes made during the pause are caught here.
         if !paused { await scanAll() }
+    }
+
+    public func acknowledgeStateReset() {
+        state.stateResetAt = nil
+        persist()
     }
 
     public func setOnDeviceAIEnabled(_ enabled: Bool) {

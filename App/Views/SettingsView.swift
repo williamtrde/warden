@@ -11,6 +11,17 @@ struct SettingsView: View {
             Section {
                 Toggle("Launch at login", isOn: Binding(get: { model.isLaunchAtLoginEnabled }, set: model.setLaunchAtLogin))
                 Toggle("Pause monitoring", isOn: Binding(get: { model.snapshot.isPaused }, set: model.setPaused))
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if model.launchAtLoginStatus == .requiresApproval {
+                        Text("Approve Warden in System Settings, under Login Items.")
+                    }
+                    if model.areNotificationsDenied {
+                        Text("Notifications are off for Warden. Turn them on in System Settings to get alerts.")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             Section {
                 Toggle("Use on-device AI for explanations", isOn: Binding(

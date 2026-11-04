@@ -11,7 +11,7 @@ struct FileDetailView: View {
         } else {
             ScrollView {
                 VStack(spacing: 12) {
-                    ShieldBadge(state: .secure, isPaused: false, size: 44)
+                    ShieldBadge(appearance: .secure, size: 44)
                     Text(verbatim: status.target.displayName).font(.title3.weight(.semibold))
                     if !status.exists {
                         Text("This file does not exist yet. Warden will alert you if it appears.")
@@ -72,8 +72,8 @@ private struct ChangeDetailView: View {
     private var actions: some View {
         HStack(spacing: 10) {
             let revertFirst = change.explanation.recommendedAction == .revert
-            decisionButton("Revert", isPrimary: revertFirst) { model.revert(path: change.path) }
-            decisionButton("Accept", isPrimary: !revertFirst) { model.accept(path: change.path) }
+            decisionButton("Revert", isPrimary: revertFirst) { model.revert(path: change.path, fingerprint: change.fingerprint) }
+            decisionButton("Accept", isPrimary: !revertFirst) { model.accept(path: change.path, fingerprint: change.fingerprint) }
             Spacer()
             Text(revertHint)
                 .font(.caption)

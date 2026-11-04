@@ -34,27 +34,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// The icon in the menu bar. Each state has its own glyph, so color is never the only signal.
+/// The icon in the menu bar.
 private struct ShieldIcon: View {
     let model: AppModel
 
     var body: some View {
-        Image(nsImage: Self.image(for: model.snapshot.shield, isPaused: model.snapshot.isPaused))
+        Image(nsImage: Self.image(for: model.appearance))
             .accessibilityLabel(Text(model.statusTitle))
     }
 
-    private static func image(for shield: ShieldState, isPaused: Bool) -> NSImage {
-        let symbol: String
-        let color: NSColor
-        switch (isPaused, shield) {
-        case (true, _): (symbol, color) = ("shield.slash.fill", .systemGray)
-        case (false, .secure): (symbol, color) = ("checkmark.shield.fill", .systemGreen)
-        case (false, .pending): (symbol, color) = ("exclamationmark.shield.fill", .systemOrange)
-        case (false, .critical): (symbol, color) = ("xmark.shield.fill", .systemRed)
-        }
+    private static func image(for appearance: ShieldAppearance) -> NSImage {
         let configuration = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
-            .applying(.init(paletteColors: [.white, color]))
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Warden")?
+            .applying(.init(paletteColors: [.white, appearance.color]))
+        let image = NSImage(systemSymbolName: appearance.symbol, accessibilityDescription: "Warden")?
             .withSymbolConfiguration(configuration) ?? NSImage()
         image.isTemplate = false
         return image

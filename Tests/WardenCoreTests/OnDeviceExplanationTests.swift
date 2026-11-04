@@ -57,9 +57,25 @@ final class OnDeviceExplanationTests: XCTestCase {
     func testValidDraftIsUsedWithTheRuleBasedRecommendation() async {
         let result = await service(StubClient(draft: goodDraft)).explain(request())
         XCTAssertEqual(result.source, .onDeviceAI)
-        XCTAssertEqual(result.whatChanged, goodDraft.whatChanged)
+        XCTAssertEqual(result.impact, goodDraft.impact)
         XCTAssertEqual(result.recommendedAction, .revert)
         XCTAssertTrue(result.recommendation.contains("reverting"))
+    }
+
+    /// The model once wrote that a file "now allows editing" when that had not changed.
+    func testCriticalChangeStatesTheFactsFromTheRules() async {
+        let misreading = ModelDraft(whatChanged: "The settings file was updated to allow editing.", impact: goodDraft.impact)
+        let critical = request()
+        let result = await service(StubClient(draft: misreading)).explain(critical)
+        XCTAssertEqual(result.source, .onDeviceAI)
+        XCTAssertEqual(result.whatChanged, RuleBasedExplanationGenerator.make(critical).whatChanged)
+        XCTAssertEqual(result.firstSentence, RuleBasedExplanationGenerator.make(critical).firstSentence)
+    }
+
+    func testInfoChangeKeepsTheModelPhrasing() async {
+        let result = await service(StubClient(draft: goodDraft)).explain(request(rules: [.urlMentioned]))
+        XCTAssertEqual(result.source, .onDeviceAI)
+        XCTAssertEqual(result.whatChanged, goodDraft.whatChanged)
     }
 
     func testInjectedDraftCannotChangeTheRecommendation() async {
@@ -93,7 +109,6 @@ final class OnDeviceExplanationTests: XCTestCase {
         let draft = ModelDraft(whatChanged: "A command was added to the settings of the agent.", impact: "It will run every time you open a session.")
         let result = await service(StubClient(draft: draft)).explain(request())
         XCTAssertEqual(result.source, .onDeviceAI)
-        XCTAssertEqual(result.whatChanged, draft.whatChanged)
         XCTAssertTrue(result.impact.contains("ATLAS"))
     }
 

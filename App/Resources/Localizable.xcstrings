@@ -84,6 +84,16 @@
         }
       }
     },
+    "Approve Warden in System Settings, under Login Items.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autorise Warden dans Réglages Système, section Ouverture."
+          }
+        }
+      }
+    },
     "Back to reference": {
       "localizations": {
         "fr": {
@@ -120,6 +130,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Changement : %@"
+          }
+        }
+      }
+    },
+    "Check your watched files. Files you added yourself must be added again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifie tes fichiers surveillés. Ceux que tu avais ajoutés toi-même sont à ajouter de nouveau."
           }
         }
       }
@@ -170,6 +190,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Historique"
+          }
+        }
+      }
+    },
+    "I Understand": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "J'ai compris"
           }
         }
       }
@@ -250,6 +280,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Introuvable"
+          }
+        }
+      }
+    },
+    "Notifications are off for Warden. Turn them on in System Settings to get alerts.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les notifications de Warden sont désactivées. Active-les dans Réglages Système pour recevoir les alertes."
           }
         }
       }
@@ -484,12 +524,32 @@
         }
       }
     },
+    "This change is no longer waiting for a decision.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce changement n'attend plus de décision."
+          }
+        }
+      }
+    },
     "This file does not exist yet. Warden will alert you if it appears.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Ce fichier n'existe pas encore. Warden t'alertera s'il apparaît."
+          }
+        }
+      }
+    },
+    "This file is no longer watched.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce fichier n'est plus surveillé."
           }
         }
       }
@@ -534,12 +594,72 @@
         }
       }
     },
-    "Warden is watching %lld files.": {
+    "Warden is not monitoring your files": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Warden surveille %lld fichiers."
+            "value": "Warden ne surveille pas tes fichiers"
+          }
+        }
+      }
+    },
+    "Warden is watching %lld files.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Warden is watching %lld file."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Warden is watching %lld files."
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Warden surveille %lld fichier."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Warden surveille %lld fichiers."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Warden's records were damaged and rebuilt": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les données de Warden étaient abîmées et ont été reconstruites"
+          }
+        }
+      }
+    },
+    "Warden's stored copy of this version is missing or damaged. The file was left untouched.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La copie de cette version gardée par Warden est absente ou abîmée. Le fichier n'a pas été modifié."
           }
         }
       }

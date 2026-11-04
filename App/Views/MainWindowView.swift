@@ -9,18 +9,14 @@ struct MainWindowView: View {
             SidebarView(model: model)
                 .navigationSplitViewColumnWidth(min: 230, ideal: 260, max: 340)
         } detail: {
-            switch model.selection {
-            case .file(let path):
-                if let status = model.snapshot.files.first(where: { $0.id == path }) {
-                    FileDetailView(model: model, status: status)
-                        .id(path)
-                } else {
-                    placeholder
-                }
-            case .history:
-                HistoryView(model: model)
-            case nil:
-                placeholder
+            if let error = model.startupError {
+                ContentUnavailableView(
+                    "Warden is not monitoring your files",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text(verbatim: error)
+                )
+            } else {
+                detail
             }
         }
         .frame(minWidth: 820, minHeight: 520)
@@ -28,6 +24,22 @@ struct MainWindowView: View {
             Button("OK") { model.errorMessage = nil }
         } message: {
             Text(verbatim: model.errorMessage ?? "")
+        }
+    }
+
+    @ViewBuilder private var detail: some View {
+        switch model.selection {
+        case .file(let path):
+            if let status = model.snapshot.files.first(where: { $0.id == path }) {
+                FileDetailView(model: model, status: status)
+                    .id(path)
+            } else {
+                placeholder
+            }
+        case .history:
+            HistoryView(model: model)
+        case nil:
+            placeholder
         }
     }
 

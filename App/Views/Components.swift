@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import WardenCore
 
@@ -6,13 +7,14 @@ extension Severity {
     var title: LocalizedStringKey { self == .critical ? "Critical" : "Info" }
 }
 
+/// The shape differs by severity, so that color is never the only signal.
 struct SeverityDot: View {
     let severity: Severity
 
     var body: some View {
-        Circle()
-            .fill(severity.color)
-            .frame(width: 8, height: 8)
+        Image(systemName: severity == .critical ? "xmark.octagon.fill" : "exclamationmark.circle.fill")
+            .font(.system(size: 11))
+            .foregroundStyle(severity.color)
             .accessibilityLabel(Text(severity.title))
     }
 }
@@ -30,34 +32,39 @@ struct SeverityBadge: View {
     }
 }
 
-struct ShieldBadge: View {
-    let state: ShieldState
-    let isPaused: Bool
-    let size: CGFloat
+/// What the shield shows. Each state has its own glyph, so color is never the only signal.
+enum ShieldAppearance {
+    case paused, secure, pending, critical, failed
 
-    var body: some View {
-        Image(systemName: symbol)
-            .font(.system(size: size))
-            .symbolRenderingMode(.palette)
-            .foregroundStyle(.white, color)
-            .accessibilityHidden(true)
-    }
-
-    private var symbol: String {
-        if isPaused { return "shield.slash.fill" }
-        switch state {
+    var symbol: String {
+        switch self {
+        case .paused: return "shield.slash.fill"
         case .secure: return "checkmark.shield.fill"
         case .pending: return "exclamationmark.shield.fill"
         case .critical: return "xmark.shield.fill"
+        case .failed: return "exclamationmark.triangle.fill"
         }
     }
 
-    private var color: Color {
-        if isPaused { return .gray }
-        switch state {
-        case .secure: return .green
-        case .pending: return .orange
-        case .critical: return .red
+    var color: NSColor {
+        switch self {
+        case .paused: return .systemGray
+        case .secure: return .systemGreen
+        case .pending: return .systemOrange
+        case .critical, .failed: return .systemRed
         }
+    }
+}
+
+struct ShieldBadge: View {
+    let appearance: ShieldAppearance
+    let size: CGFloat
+
+    var body: some View {
+        Image(systemName: appearance.symbol)
+            .font(.system(size: size))
+            .symbolRenderingMode(.palette)
+            .foregroundStyle(.white, Color(nsColor: appearance.color))
+            .accessibilityHidden(true)
     }
 }

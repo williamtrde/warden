@@ -13,11 +13,12 @@ final class NotificationManager: NSObject {
     private static let acceptAction = "warden.accept"
     private static let revertAction = "warden.revert"
     private static let pathKey = "path"
+    private static let fingerprintKey = "fingerprint"
 
     private let center = UNUserNotificationCenter.current()
-    private var handler: ((Action, String) -> Void)?
+    private var handler: ((Action, String, String?) -> Void)?
 
-    func configure(handler: @escaping (Action, String) -> Void) {
+    func configure(handler: @escaping (Action, String, String?) -> Void) {
         self.handler = handler
         center.delegate = self
         let accept = UNNotificationAction(identifier: Self.acceptAction, title: String(localized: "Accept"))
@@ -37,9 +38,27 @@ final class NotificationManager: NSObject {
             : String(localized: "Change: \(fileName)")
         content.body = change.explanation.firstSentence
         content.categoryIdentifier = Self.category
-        content.userInfo = [Self.pathKey: change.path]
+        content.userInfo = [Self.pathKey: change.path, Self.fingerprintKey: change.fingerprint]
         content.sound = change.severity == .critical ? .default : nil
         center.add(UNNotificationRequest(identifier: change.path, content: content, trigger: nil))
+    }
+
+    /// A message about Warden itself, with no decision attached.
+    func postNotice(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+    }
+
+    func remove(paths: [String]) {
+        guard !paths.isEmpty else { return }
+        center.removeDeliveredNotifications(withIdentifiers: paths)
+    }
+
+    func isDenied() async -> Bool {
+        await center.notificationSettings().authorizationStatus == .denied
     }
 }
 
@@ -57,11 +76,12 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
     ) async {
         guard let path = response.notification.request.content.userInfo[Self.pathKey] as? String else { return }
         let identifier = response.actionIdentifier
+        let fingerprint = response.notification.request.content.userInfo[Self.fingerprintKey] as? String
         await MainActor.run {
             switch identifier {
-            case Self.acceptAction: handler?(.accept, path)
-            case Self.revertAction: handler?(.revert, path)
-            default: handler?(.open, path)
+            case Self.acceptAction: handler?(.accept, path, fingerprint)
+            case Self.revertAction: handler?(.revert, path, fingerprint)
+            default: handler?(.open, path, fingerprint)
             }
         }
     }

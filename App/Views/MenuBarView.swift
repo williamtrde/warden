@@ -9,6 +9,25 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider()
+            status
+            Divider()
+            footer
+        }
+        .frame(width: 340)
+    }
+
+    @ViewBuilder private var status: some View {
+        if let error = model.startupError {
+            Text(verbatim: error)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(14)
+        } else {
+            if model.snapshot.stateResetAt != nil {
+                resetNotice
+                Divider()
+            }
             if model.snapshot.pending.isEmpty {
                 Text("Warden is watching \(watchedCount) files.")
                     .font(.callout)
@@ -25,10 +44,18 @@ struct MenuBarView: View {
                 }
                 .frame(maxHeight: 280)
             }
-            Divider()
-            footer
         }
-        .frame(width: 340)
+    }
+
+    private var resetNotice: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Check your watched files. Files you added yourself must be added again.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("I Understand") { model.acknowledgeStateReset() }
+        }
+        .padding(14)
     }
 
     private var watchedCount: Int {
@@ -37,7 +64,7 @@ struct MenuBarView: View {
 
     private var header: some View {
         HStack(spacing: 10) {
-            ShieldBadge(state: model.snapshot.shield, isPaused: model.snapshot.isPaused, size: 26)
+            ShieldBadge(appearance: model.appearance, size: 26)
             VStack(alignment: .leading, spacing: 1) {
                 Text(verbatim: "Warden").font(.headline)
                 Text(model.statusTitle).font(.caption).foregroundStyle(.secondary)

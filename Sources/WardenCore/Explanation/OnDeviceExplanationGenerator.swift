@@ -17,7 +17,11 @@ public struct OnDeviceExplanationGenerator: ExplanationGenerator {
         try ExplanationValidator.validate(draft, for: request)
         let builtIn = RuleBasedExplanationGenerator.make(request)
         return Explanation(
-            whatChanged: draft.whatChanged.trimmingCharacters(in: .whitespacesAndNewlines),
+            // A critical change states verified facts: a model can misread a diff, and this
+            // sentence is also the notification. The model still phrases the impact.
+            whatChanged: request.severity == .critical
+                ? builtIn.whatChanged
+                : draft.whatChanged.trimmingCharacters(in: .whitespacesAndNewlines),
             impact: ExplanationValidator.mentionsProjects(draft, for: request)
                 ? draft.impact.trimmingCharacters(in: .whitespacesAndNewlines)
                 : builtIn.impact,

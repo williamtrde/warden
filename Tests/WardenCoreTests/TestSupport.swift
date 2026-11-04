@@ -20,3 +20,17 @@ func classifyTOML(_ old: String, _ new: String) throws -> [RiskFinding] {
     let rhs = try ConfigParser.parse(Data(new.utf8), format: .toml)
     return RiskClassifier.classify(changes: StructuralDiff.compute(old: lhs, new: rhs), old: lhs, new: rhs)
 }
+
+func XCTAssertThrowsErrorAsync(
+    _ expression: @autoclosure () async throws -> some Any,
+    file: StaticString = #filePath,
+    line: UInt = #line,
+    _ handler: (Error) -> Void = { _ in }
+) async {
+    do {
+        _ = try await expression()
+        XCTFail("Expected an error", file: file, line: line)
+    } catch {
+        handler(error)
+    }
+}

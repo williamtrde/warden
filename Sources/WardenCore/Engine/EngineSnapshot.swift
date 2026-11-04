@@ -24,6 +24,8 @@ public struct EngineSnapshot: Equatable, Sendable {
     public var history: [HistoryEntry] = []
     public var isPaused = false
     public var isOnDeviceAIEnabled = true
+    /// When Warden had to rebuild its damaged state. Stays set until acknowledged.
+    public var stateResetAt: Date?
 
     public init() {}
 
@@ -37,6 +39,6 @@ public struct EngineSnapshot: Equatable, Sendable {
     public var shield: ShieldState {
         let changes = pending
         if changes.contains(where: { $0.severity == .critical }) { return .critical }
-        return changes.isEmpty ? .secure : .pending
+        return changes.isEmpty && stateResetAt == nil ? .secure : .pending
     }
 }

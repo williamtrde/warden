@@ -15,7 +15,10 @@ enum SidebarItem: Hashable {
 @Observable
 final class AppModel {
     private(set) var snapshot = EngineSnapshot()
-    private(set) var isLaunchAtLoginEnabled = SMAppService.mainApp.status == .enabled
+    private(set) var launchAtLoginStatus = SMAppService.mainApp.status
+    private(set) var areNotificationsDenied = false
+    /// Set when Warden could not start. Nothing is being watched, and the interface must say so.
+    private(set) var startupError: String?
     private(set) var isOnDeviceAIAvailable = OnDeviceModel.makeClient() != nil
     var selection: SidebarItem?
     var errorMessage: String?
@@ -24,16 +27,33 @@ final class AppModel {
     private let notifications = NotificationManager()
     private let windows = WindowManager()
 
-    var statusTitle: LocalizedStringKey {
-        if snapshot.isPaused { return "Monitoring paused" }
+    var isLaunchAtLoginEnabled: Bool { launchAtLoginStatus == .enabled || launchAtLoginStatus == .requiresApproval }
+
+    /// A pause never hides a change that is still waiting.
+    var appearance: ShieldAppearance {
+        if startupError != nil { return .failed }
         switch snapshot.shield {
+        case .secure: return snapshot.isPaused ? .paused : .secure
+        case .pending: return .pending
+        case .critical: return .critical
+        }
+    }
+
+    var statusTitle: LocalizedStringKey {
+        switch appearance {
+        case .failed: return "Warden is not monitoring your files"
+        case .paused: return "Monitoring paused"
         case .secure: return "All files match their reference"
-        case .pending: return "A change is waiting for your decision"
+        case .pending:
+            return snapshot.pending.isEmpty ? "Warden's records were damaged and rebuilt" : "A change is waiting for your decision"
         case .critical: return "A critical change is waiting"
         }
     }
 
     func start() {
+        notifications.configure { [weak self] action, path, fingerprint in
+            self?.handleNotification(action, path: path, fingerprint: fingerprint)
+        }
         do {
             let home = AppEnvironment.home
             let store = try WardenStore(root: AppEnvironment.supportDirectory)
@@ -45,22 +65,31 @@ final class AppModel {
                 onDeviceGenerator: { OnDeviceModel.makeClient().map(OnDeviceExplanationGenerator.init(client:)) }
             ))
             self.engine = engine
-            notifications.configure { [weak self] action, path in self?.handleNotification(action, path: path) }
             observe(engine)
-            Task { await engine.start() }
+            Task { [weak self] in
+                await engine.start()
+                if await engine.currentSnapshot().stateResetAt != nil {
+                    self?.notifications.postNotice(
+                        title: String(localized: "Warden's records were damaged and rebuilt"),
+                        body: String(localized: "Check your watched files. Files you added yourself must be added again.")
+                    )
+                }
+            }
         } catch {
-            errorMessage = error.localizedDescription
+            startupError = Self.message(for: error)
+            notifications.postNotice(title: String(localized: "Warden is not monitoring your files"), body: startupError ?? "")
+            windows.showMain(model: self)
         }
     }
 
     private func observe(_ engine: WardenEngine) {
         Task { [weak self] in
-            for await snapshot in engine.snapshots { self?.snapshot = snapshot }
+            for await snapshot in engine.snapshots { self?.apply(snapshot) }
         }
         Task { [weak self] in
             for await change in engine.alerts {
                 self?.notifications.post(change)
-                self?.snapshot = await engine.currentSnapshot()
+                await self?.apply(engine.currentSnapshot())
                 #if DEBUG
                 // Keeps the demo on screen: see scripts/demo.sh.
                 if ProcessInfo.processInfo.environment["WARDEN_OPEN_WINDOW"] != nil {
@@ -71,10 +100,17 @@ final class AppModel {
         }
     }
 
-    private func handleNotification(_ action: NotificationManager.Action, path: String) {
+    /// A banner must not outlive the change it offers to decide.
+    private func apply(_ new: EngineSnapshot) {
+        let resolved = Set(snapshot.pending.map(\.path)).subtracting(new.pending.map(\.path))
+        notifications.remove(paths: Array(resolved))
+        snapshot = new
+    }
+
+    private func handleNotification(_ action: NotificationManager.Action, path: String, fingerprint: String?) {
         switch action {
-        case .accept: accept(path: path)
-        case .revert: revert(path: path)
+        case .accept: accept(path: path, fingerprint: fingerprint)
+        case .revert: revert(path: path, fingerprint: fingerprint)
         case .open: openWindow(selecting: .file(path))
         }
     }
@@ -91,17 +127,36 @@ final class AppModel {
     }
 
     func openSettings() {
+        Task { await refreshSystemStatus() }
         windows.showSettings(model: self)
+    }
+
+    /// Both can change in System Settings while Warden is running.
+    private func refreshSystemStatus() async {
+        launchAtLoginStatus = SMAppService.mainApp.status
+        areNotificationsDenied = await notifications.isDenied()
     }
 
     // MARK: - Decisions
 
-    func accept(path: String) {
-        perform { try await $0.accept(path: path) }
+    /// Decisions name the version the user saw. If it is gone, Warden shows what is there now
+    /// instead of deciding about something the user never read.
+    func accept(path: String, fingerprint: String?) {
+        decide(path: path) { try await $0.accept(path: path, fingerprint: fingerprint) }
     }
 
-    func revert(path: String) {
-        perform { try await $0.revert(path: path) }
+    func revert(path: String, fingerprint: String?) {
+        decide(path: path) { try await $0.revert(path: path, fingerprint: fingerprint) }
+    }
+
+    private func decide(path: String, _ action: @escaping @Sendable (WardenEngine) async throws -> Void) {
+        perform { engine in
+            do {
+                try await action(engine)
+            } catch EngineError.changeSuperseded, EngineError.noPendingChange {
+                await MainActor.run { self.openWindow(selecting: .file(path)) }
+            }
+        }
     }
 
     func restore(path: String, sha: String) {
@@ -114,9 +169,29 @@ final class AppModel {
             do {
                 try await action(engine)
             } catch {
-                errorMessage = error.localizedDescription
+                present(error)
             }
-            snapshot = await engine.currentSnapshot()
+            await apply(engine.currentSnapshot())
+        }
+    }
+
+    /// Errors live in the main window: it is opened, because a decision made from a
+    /// notification or from Settings has nowhere else to fail visibly.
+    private func present(_ error: Error) {
+        errorMessage = Self.message(for: error)
+        windows.showMain(model: self)
+    }
+
+    private static func message(for error: Error) -> String {
+        switch error {
+        case EngineError.unknownFile:
+            return String(localized: "This file is no longer watched.")
+        case EngineError.noPendingChange, EngineError.changeSuperseded:
+            return String(localized: "This change is no longer waiting for a decision.")
+        case is StoreError:
+            return String(localized: "Warden's stored copy of this version is missing or damaged. The file was left untouched.")
+        default:
+            return error.localizedDescription
         }
     }
 
@@ -129,6 +204,10 @@ final class AppModel {
     }
 
     // MARK: - Settings
+
+    func acknowledgeStateReset() {
+        perform { await $0.acknowledgeStateReset() }
+    }
 
     func setPaused(_ paused: Bool) {
         perform { await $0.setPaused(paused) }
@@ -154,8 +233,8 @@ final class AppModel {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            errorMessage = error.localizedDescription
+            present(error)
         }
-        isLaunchAtLoginEnabled = SMAppService.mainApp.status == .enabled
+        launchAtLoginStatus = SMAppService.mainApp.status
     }
 }

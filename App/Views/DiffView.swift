@@ -1,7 +1,7 @@
 import SwiftUI
 import WardenCore
 
-/// A readable, colored diff. Critical lines also get a marker, so color is not the only signal.
+/// A readable, colored diff. Highlighted lines also get a glyph, so color is not the only signal.
 struct DiffView: View {
     let diff: LineDiff
 
@@ -13,7 +13,7 @@ struct DiffView: View {
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.tertiary)
                         .padding(.vertical, 2)
-                        .padding(.leading, 66)
+                        .padding(.leading, 78)
                 }
                 ForEach(hunk.lines) { DiffLineRow(line: $0) }
             }
@@ -45,10 +45,20 @@ private struct DiffLineRow: View {
     }
 
     private var marker: some View {
-        Rectangle()
-            .fill(markerColor)
-            .frame(width: 4)
-            .padding(.trailing, 2)
+        HStack(spacing: 0) {
+            Rectangle().fill(markerColor).frame(width: 4)
+            Text(verbatim: markerGlyph)
+                .font(.system(.caption, design: .monospaced).weight(.bold))
+                .frame(width: 14)
+        }
+    }
+
+    private var markerGlyph: String {
+        switch line.emphasis {
+        case .critical: return "!!"
+        case .notable: return "!"
+        case .none: return ""
+        }
     }
 
     private var number: String {

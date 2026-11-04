@@ -161,6 +161,93 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(change.severity, .critical)
     }
 
+    // MARK: - Damaged state
+
+    private var stateFile: URL { store.root.appendingPathComponent("state.json") }
+
+    func testDamagedStateDoesNotStopMonitoringAndStaysVisible() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        await engine.stop()
+        try Data("not json".utf8).write(to: stateFile)
+
+        try await start()
+        let snapshot = await engine.currentSnapshot()
+        XCTAssertNotNil(snapshot.stateResetAt)
+        XCTAssertEqual(snapshot.shield, .pending)
+        XCTAssertFalse(snapshot.files.isEmpty)
+        XCTAssertFalse(watcher.paths.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.root.appendingPathComponent("state.damaged.json").path))
+
+        await engine.acknowledgeStateReset()
+        let acknowledged = await engine.currentSnapshot()
+        XCTAssertNil(acknowledged.stateResetAt)
+        XCTAssertEqual(acknowledged.shield, .secure)
+    }
+
+    /// The attack: damage the state so that Warden forgets, then change the file.
+    func testDamagingTheStateCannotLaunderAModifiedFile() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        await engine.stop()
+        try Data("not json".utf8).write(to: stateFile)
+        try home.write(#"{"hooks":{"Stop":[{"command":"evil"}]}}"#, to: settings)
+
+        try await start()
+        let change = try await XCTUnwrapAsync(await pending(settings))
+        XCTAssertEqual(change.severity, .critical)
+        try await engine.revert(path: settings)
+        XCTAssertEqual(try home.read(settings), "{}")
+    }
+
+    func testRebuiltReferenceIsTheLatestAcceptedVersion() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        try home.write(#"{"a":1}"#, to: settings)
+        await engine.scanAll()
+        try await engine.accept(path: settings)
+        await engine.stop()
+        try Data("not json".utf8).write(to: stateFile)
+
+        try await start()
+        let change = await pending(settings)
+        XCTAssertNil(change)
+    }
+
+    // MARK: - Decisions about a version the user saw
+
+    func testDecisionsOnASupersededChangeDoNothing() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        try home.write(#"{"a":1}"#, to: settings)
+        await engine.scanAll()
+        let seen = try await XCTUnwrapAsync(await pending(settings))
+        let evil = #"{"a":1,"hooks":{"Stop":[{"command":"evil"}]}}"#
+        try home.write(evil, to: settings)
+        await engine.scanAll()
+
+        await XCTAssertThrowsErrorAsync(try await self.engine.accept(path: self.settings, fingerprint: seen.fingerprint)) {
+            XCTAssertEqual($0 as? EngineError, .changeSuperseded)
+        }
+        await XCTAssertThrowsErrorAsync(try await self.engine.revert(path: self.settings, fingerprint: seen.fingerprint)) {
+            XCTAssertEqual($0 as? EngineError, .changeSuperseded)
+        }
+        let change = try await XCTUnwrapAsync(await pending(settings))
+        XCTAssertEqual(change.severity, .critical)
+        XCTAssertEqual(try home.read(settings), evil)
+    }
+
+    func testDecisionWithTheCurrentFingerprintApplies() async throws {
+        try home.write("{}", to: settings)
+        try await start()
+        try home.write(#"{"a":1}"#, to: settings)
+        await engine.scanAll()
+        let change = try await XCTUnwrapAsync(await pending(settings))
+        try await engine.accept(path: settings, fingerprint: change.fingerprint)
+        let remaining = await pending(settings)
+        XCTAssertNil(remaining)
+    }
+
     func testAcceptMakesTheVersionTheNewReference() async throws {
         try home.write("{}", to: settings)
         try await start()

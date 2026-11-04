@@ -3,8 +3,16 @@
 # Warden Debug builds use it through WARDEN_HOME. Your real files are never involved.
 set -euo pipefail
 HOME_DIR="${1:?usage: demo-home.sh <directory>}"
-rm -rf "$HOME_DIR"
+# Only ever deletes a directory this script created.
+if [ -e "$HOME_DIR" ]; then
+  if [ ! -f "$HOME_DIR/.warden-demo" ]; then
+    echo "Refusing to touch $HOME_DIR: it is not a Warden demo home." >&2
+    exit 1
+  fi
+  rm -rf "$HOME_DIR"
+fi
 mkdir -p "$HOME_DIR/.claude/projects" "$HOME_DIR/.codex"
+touch "$HOME_DIR/.warden-demo"
 
 cat > "$HOME_DIR/.claude/settings.json" <<'JSON'
 {

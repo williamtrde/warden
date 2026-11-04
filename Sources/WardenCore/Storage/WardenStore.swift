@@ -13,6 +13,8 @@ public struct WardenState: Codable, Equatable, Sendable {
     public var pending: [String: PendingChange] = [:]
     public var isPaused = false
     public var isOnDeviceAIEnabled = true
+    /// Set when damaged state had to be replaced, until the user acknowledges it.
+    public var stateResetAt: Date?
 
     public init() {}
 }
@@ -77,6 +79,18 @@ public final class WardenStore: @unchecked Sendable {
     public func loadState() throws -> WardenState {
         guard fileManager.fileExists(atPath: stateURL.path) else { return WardenState() }
         return try decoder.decode(WardenState.self, from: Data(contentsOf: stateURL))
+    }
+
+    /// Like `loadState`, but a file that cannot be decoded is moved aside instead of stopping
+    /// Warden: monitoring must survive damage, which any process of this user could cause.
+    public func loadStateRecovering() throws -> (state: WardenState, wasDamaged: Bool) {
+        guard fileManager.fileExists(atPath: stateURL.path) else { return (WardenState(), false) }
+        let data = try Data(contentsOf: stateURL)
+        if let state = try? decoder.decode(WardenState.self, from: data) { return (state, false) }
+        let aside = root.appendingPathComponent("state.damaged.json")
+        try? fileManager.removeItem(at: aside)
+        try fileManager.moveItem(at: stateURL, to: aside)
+        return (WardenState(), true)
     }
 
     public func saveState(_ state: WardenState) throws {
