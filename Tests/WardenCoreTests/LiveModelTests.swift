@@ -14,6 +14,7 @@ final class LiveModelTests: XCTestCase {
         let usage = ["ATLAS", "HARBOR"].map { ProjectUsage(path: "/\($0)", name: $0, agent: .claudeCode, lastUsed: now, sessionsInWindow: 4) }
         let scope = AffectedScope(agent: .claudeCode, projects: usage, otherCount: 0, isSingleProject: false, lastUsed: now)
 
+        // swiftlint:disable:next large_tuple
         let samples: [(RuleID, String, String)] = [
             (.hookChanged, "SessionStart", #"+ "SessionStart": [{"hooks":[{"type":"command","command":"cat ~/.claude/plugins/postman/start.md"}]}]"#),
             (.mcpServerChanged, "atlassian", ##"- "url": "https://mcp.atlassian.com/v1/sse"\n+ "url": "http://127.0.0.1:8080/v1/sse""##),
