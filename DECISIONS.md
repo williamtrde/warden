@@ -16,3 +16,4 @@
 | 2026-11-04 | README cites the Postman case as a public report and links it; the MCP redirect scenario names nobody | Only what could be checked at a primary source is attributed |
 | 2026-11-04 | Surgical revert keeps values but rewrites the file: comments and formatting of filtered files can change, a backup is saved first | A text-level patch is a large new write path; the README says so plainly. Deviation from the spec's "preserves the rest of the file", to validate |
 | 2026-11-04 | INBOX.md stays local and out of the public repository | Personal working notes |
+| 2026-11-04 | History rewritten before the first push to replace real project names used in tests | The owner required no personal data in the history. Sources and App are unchanged, so the notarized DMG stays valid |

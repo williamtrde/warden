@@ -11,8 +11,8 @@
 - Task 20: scripts/release.sh.
 - R4: final independent review, majors fixed (commit e21047f).
 
-## In progress
-- Signed and notarized build of the final commit.
+- Task 20 verified: app and DMG notarized and stapled, `spctl` and `stapler validate` pass.
+- Secret and personal data check on the tree, the history and the binary.
 
-## Remaining
-- Task 21: secret check, then publish the repository and release v1.0.0 (approved by the owner). Notes are in docs/release-notes-1.0.0.md.
+## In progress
+- Task 21: publish the repository and release v1.0.0. The auto mode classifier blocks it, so the owner runs the publish script.
