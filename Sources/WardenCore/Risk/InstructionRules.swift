@@ -222,18 +222,17 @@ public enum InstructionRules {
     // MARK: - Secrets
 
     private static func containsSecretAccess(_ line: String) -> Bool {
-        for pattern in InstructionPatterns.secretFileAccess {
-            if pattern.matchRanges(in: line).contains(where: { !isNegated($0, in: line) }) { return true }
+        let readsSecretFile = InstructionPatterns.secretFileAccess.contains { pattern in
+            pattern.matchRanges(in: line).contains { !isNegated($0, in: line) }
         }
+        if readsSecretFile { return true }
         if InstructionPatterns.legitimateAuth.firstMatch(in: line) == nil,
            InstructionPatterns.secretSending.matchRanges(in: line).contains(where: { !isNegated($0, in: line) }) {
             return true
         }
-        for pattern in InstructionPatterns.externalSending {
-            let ranges = pattern.matchRanges(in: line)
-            if ranges.contains(where: { !isNegated($0, in: line) && reachesExternalHost(String(line[$0])) }) { return true }
+        return InstructionPatterns.externalSending.contains { pattern in
+            pattern.matchRanges(in: line).contains { !isNegated($0, in: line) && reachesExternalHost(String(line[$0])) }
         }
-        return false
     }
 
     /// True when any host in the text is not this machine. Hosts are parsed, not prefix-matched:
