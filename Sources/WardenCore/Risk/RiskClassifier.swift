@@ -24,7 +24,7 @@ public enum RiskClassifier {
             }
             for rule in matched {
                 let evidence = "\(change.dottedPath) = \(input.text)"
-                findings.append(.init(rule: rule.id, keyPath: change.path, evidence: evidence, projectPath: project))
+                findings.append(.init(rule: rule.id, keyPath: change.path, evidence: evidence, projectPath: project, value: input.text))
             }
         }
         return findings

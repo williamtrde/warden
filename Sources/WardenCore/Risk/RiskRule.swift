@@ -55,12 +55,26 @@ public struct RiskFinding: Equatable, Codable, Sendable {
     public let evidence: String
     /// Set when the change targets a single project, as in `projects.<path>.mcpServers`.
     public let projectPath: String?
+    /// The changed value, without its key, used to find the line to highlight.
+    public let value: String?
 
-    public init(rule: RuleID, keyPath: [String]? = nil, evidence: String, projectPath: String? = nil) {
+    public init(rule: RuleID, keyPath: [String]? = nil, evidence: String, projectPath: String? = nil, value: String? = nil) {
         self.rule = rule
         self.keyPath = keyPath
         self.evidence = evidence
         self.projectPath = projectPath
+        self.value = value
+    }
+
+    /// A copy safe to store and display.
+    var masked: RiskFinding {
+        RiskFinding(
+            rule: rule,
+            keyPath: keyPath,
+            evidence: SecretRedactor.redact(evidence),
+            projectPath: projectPath,
+            value: value.map(SecretRedactor.redact)
+        )
     }
 
     public var severity: Severity { rule.severity }

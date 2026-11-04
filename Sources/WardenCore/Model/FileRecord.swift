@@ -47,6 +47,9 @@ public struct PendingChange: Codable, Equatable, Sendable, Identifiable {
     public let detectedAt: Date
     public let beforeSHA: String?
     public let afterSHA: String?
+    /// Identifies the content of the change, so that a rewrite with the same
+    /// watched values does not alert twice.
+    public let fingerprint: String
     public let severity: Severity
     public let findings: [RiskFinding]
     public let explanation: Explanation
@@ -57,6 +60,7 @@ public struct PendingChange: Codable, Equatable, Sendable, Identifiable {
         detectedAt: Date,
         beforeSHA: String?,
         afterSHA: String?,
+        fingerprint: String,
         severity: Severity,
         findings: [RiskFinding],
         explanation: Explanation
@@ -66,6 +70,7 @@ public struct PendingChange: Codable, Equatable, Sendable, Identifiable {
         self.detectedAt = detectedAt
         self.beforeSHA = beforeSHA
         self.afterSHA = afterSHA
+        self.fingerprint = fingerprint
         self.severity = severity
         self.findings = findings
         self.explanation = explanation
