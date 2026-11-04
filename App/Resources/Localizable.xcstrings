@@ -1,0 +1,589 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@": {
+      "shouldTranslate": false
+    },
+    "%@ · not on this Mac yet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · pas encore sur ce Mac"
+          }
+        }
+      }
+    },
+    "A change is waiting for your decision": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un changement attend ta décision"
+          }
+        }
+      }
+    },
+    "A critical change is waiting": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un changement critique attend ta décision"
+          }
+        }
+      }
+    },
+    "Accept": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepter"
+          }
+        }
+      }
+    },
+    "Accepted": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepté"
+          }
+        }
+      }
+    },
+    "Add File…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un fichier…"
+          }
+        }
+      }
+    },
+    "All files match their reference": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous les fichiers sont conformes à leur référence"
+          }
+        }
+      }
+    },
+    "Apple Intelligence is not available on this Mac. Warden uses its built-in rules.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence n'est pas disponible sur ce Mac. Warden utilise ses règles intégrées."
+          }
+        }
+      }
+    },
+    "Back to reference": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revenu à la référence"
+          }
+        }
+      }
+    },
+    "Built-in rules": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Règles intégrées"
+          }
+        }
+      }
+    },
+    "Change detected": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changement détecté"
+          }
+        }
+      }
+    },
+    "Change: %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changement : %@"
+          }
+        }
+      }
+    },
+    "Choose a watched file on the left.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis un fichier surveillé à gauche."
+          }
+        }
+      }
+    },
+    "Critical": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Critique"
+          }
+        }
+      }
+    },
+    "Critical change: %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changement critique : %@"
+          }
+        }
+      }
+    },
+    "Difference with the current reference": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Différence avec la référence actuelle"
+          }
+        }
+      }
+    },
+    "History": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique"
+          }
+        }
+      }
+    },
+    "Info": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info"
+          }
+        }
+      }
+    },
+    "It becomes the new reference. The current file is backed up first.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elle devient la nouvelle référence. Le fichier actuel est d'abord sauvegardé."
+          }
+        }
+      }
+    },
+    "Launch at login": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lancer à l'ouverture de session"
+          }
+        }
+      }
+    },
+    "Matches its reference": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conforme à sa référence"
+          }
+        }
+      }
+    },
+    "Matches the reference from %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conforme à la référence du %@."
+          }
+        }
+      }
+    },
+    "Monitoring paused": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Surveillance en pause"
+          }
+        }
+      }
+    },
+    "Needs your decision": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attend ta décision"
+          }
+        }
+      }
+    },
+    "Not found": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Introuvable"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "On-device AI": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IA sur l'appareil"
+          }
+        }
+      }
+    },
+    "Only security-related keys of this file trigger alerts. Routine writes stay silent.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seules les clés liées à la sécurité de ce fichier déclenchent une alerte. Les écritures de routine restent silencieuses."
+          }
+        }
+      }
+    },
+    "Open Warden": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir Warden"
+          }
+        }
+      }
+    },
+    "Other": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autre"
+          }
+        }
+      }
+    },
+    "Pause Monitoring": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre en pause la surveillance"
+          }
+        }
+      }
+    },
+    "Pause monitoring": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre en pause la surveillance"
+          }
+        }
+      }
+    },
+    "Pick a line to see that version.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis une ligne pour voir cette version."
+          }
+        }
+      }
+    },
+    "Quit Warden": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter Warden"
+          }
+        }
+      }
+    },
+    "Reference created": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Référence créée"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer"
+          }
+        }
+      }
+    },
+    "Restore": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer"
+          }
+        }
+      }
+    },
+    "Restore This Version": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer cette version"
+          }
+        }
+      }
+    },
+    "Restore this version?": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer cette version ?"
+          }
+        }
+      }
+    },
+    "Resume Monitoring": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprendre la surveillance"
+          }
+        }
+      }
+    },
+    "Revert": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler le changement"
+          }
+        }
+      }
+    },
+    "Revert restores the reference and saves a backup.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler restaure la référence et garde une sauvegarde."
+          }
+        }
+      }
+    },
+    "Revert restores the security keys and saves a backup.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler restaure les clés de sécurité et garde une sauvegarde."
+          }
+        }
+      }
+    },
+    "Reverted": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulé"
+          }
+        }
+      }
+    },
+    "Runs on this Mac. Turn it off to use built-in rules only.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elle tourne sur ce Mac. Désactive-la pour n'utiliser que les règles intégrées."
+          }
+        }
+      }
+    },
+    "Select a file": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis un fichier"
+          }
+        }
+      }
+    },
+    "Select an event": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis un événement"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages…"
+          }
+        }
+      }
+    },
+    "This file does not exist yet. Warden will alert you if it appears.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce fichier n'existe pas encore. Warden t'alertera s'il apparaît."
+          }
+        }
+      }
+    },
+    "Use on-device AI for explanations": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utiliser l'IA sur l'appareil pour les explications"
+          }
+        }
+      }
+    },
+    "Version restored": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version restaurée"
+          }
+        }
+      }
+    },
+    "Warden Settings": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages de Warden"
+          }
+        }
+      }
+    },
+    "Warden could not finish this action": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warden n'a pas pu terminer cette action"
+          }
+        }
+      }
+    },
+    "Warden is watching %lld files.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warden surveille %lld fichiers."
+          }
+        }
+      }
+    },
+    "Watched files": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichiers surveillés"
+          }
+        }
+      }
+    },
+    "What Warden recommends": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que Warden recommande"
+          }
+        }
+      }
+    },
+    "What changed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce qui a changé"
+          }
+        }
+      }
+    },
+    "What it means for you": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que ça change pour toi"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

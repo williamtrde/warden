@@ -2,10 +2,10 @@
 
 ## Done
 - SPEC.md validated, PLAN.md written.
-- Tasks 1 to 6: scaffold, parsers, diff, policy, config rules, instruction rules.
+- Tasks 1 to 13: core library complete (parsers, diff, policy, rules, redaction, usage, explanations, storage, watcher, engine).
 
 ## In progress
-- Review R1.
+- App layer.
 
 ## Remaining
-- Tasks 7 to 21 (see PLAN.md).
+- Tasks 14 to 21 (see PLAN.md).
