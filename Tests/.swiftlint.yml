@@ -1,0 +1,6 @@
+line_length:
+  warning: 220
+disabled_rules:
+  - force_unwrapping
+  - function_body_length
+  - type_body_length
