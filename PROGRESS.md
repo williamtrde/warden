@@ -15,4 +15,4 @@
 - Signed and notarized build of the final commit.
 
 ## Remaining
-- Task 21: publish the repository and release v1.0.0.
+- Task 21: publish the repository and release v1.0.0. Blocked: creating the public repository needs the owner's permission (the auto mode classifier refused it). Nothing was pushed. Notes are in docs/release-notes-1.0.0.md.
